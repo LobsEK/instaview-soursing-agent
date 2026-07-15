@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InstaView · Všeobecný hovor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            border: "hsl(240 5.9% 90%)",
+            background: "hsl(240 4.8% 95.9%)",
+            foreground: "hsl(240 10% 3.9%)",
+            card: "hsl(0 0% 100%)",
+            muted: "hsl(240 4.8% 95.9%)",
+            "muted-foreground": "hsl(240 5% 28%)",
+          },
+          borderRadius: {
+            sm: "calc(0.625rem - 4px)",
+            md: "calc(0.625rem - 2px)",
+            lg: "0.625rem",
+            xl: "calc(0.625rem + 4px)",
+          },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    body { background: hsl(240 4.8% 95.9%); }
+    @keyframes ring-shake {
+      0%,100% { transform: rotate(0); }
+      20% { transform: rotate(-14deg); }
+      40% { transform: rotate(12deg); }
+      60% { transform: rotate(-10deg); }
+      80% { transform: rotate(8deg); }
+    }
+    .ringing { animation: ring-shake .6s ease-in-out infinite; }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(22,163,74,.45); }
+      70% { box-shadow: 0 0 0 10px rgba(22,163,74,0); }
+      100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+    }
+    .pulse-call { animation: pulse-ring 1.3s infinite; }
+    #drawer { transition: transform .28s ease; }
+    .field { width:100%; border:1px solid hsl(240 5.9% 90%); border-radius:calc(0.625rem - 2px); padding:9px 11px; font-size:14px; outline:none; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+    .field:focus { border-color:#003AB8; box-shadow:0 0 0 3px rgba(0,58,184,.14); }
+    .lbl { font-size:12.5px; font-weight:600; color:hsl(240 5% 28%); margin-bottom:6px; display:block; }
+    /* question card styling */
+    .q-card { background:#fff; border:1px solid hsl(240 5.9% 88%); border-left:4px solid #7c3aed; border-radius:12px; padding:13px; box-shadow:0 1px 3px rgba(0,0,0,.07); }
+    .q-card.done { border-color:#86efac; border-left-color:#16a34a; background:#f6fdf9; }
+    .q-badge { display:grid; place-items:center; width:22px; height:22px; border-radius:50%; background:rgba(124,58,237,.12); color:#7c3aed; font-size:12px; font-weight:700; flex:none; }
+    .q-card.done .q-badge { background:#16a34a; color:#fff; }
+    .q-title { font-size:13px; font-weight:700; }
+    .q-done { display:none; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#16a34a; }
+    .q-card.done .q-done { display:inline-flex; }
+    .q-del { color:#dc2626; cursor:pointer; flex:none; }
+    .q-del:hover { color:#b91c1c; }
+    .q-add { display:grid; place-items:center; width:28px; height:28px; border-radius:50%; background:#7c3aed; color:#fff; border:0; cursor:pointer; flex:none; box-shadow:0 2px 6px rgba(124,58,237,.35); }
+    .q-add:hover { filter:brightness(1.08); }
+    .q-field { width:100%; border:1px solid hsl(240 5.9% 88%); border-radius:8px; padding:8px 10px; font-size:13px; outline:none; background:#fff; font-family:inherit; resize:vertical; }
+    .q-field:focus { border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,.14); }
+    .q-mini { font-size:10px; font-weight:600; color:hsl(240 5% 45%); margin-bottom:3px; display:block; }
+    /* shadcn-style Switch */
+    .switch { position:relative; display:inline-flex; height:1.25rem; width:2.25rem; flex:none; cursor:pointer; align-items:center; }
+    .switch input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
+    .switch .track { height:1.25rem; width:2.25rem; border-radius:9999px; background:hsl(240 5% 84%); transition:background .2s; }
+    .switch .thumb { position:absolute; left:2px; height:1rem; width:1rem; border-radius:9999px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:transform .2s; }
+    .switch input:checked + .track { background:#003AB8; }
+    .switch input:checked ~ .thumb { transform:translateX(1rem); }
+    /* CRM-style data preview */
+    .dp-wrap { border:1px solid hsl(240 5.9% 90%); border-radius:12px; overflow:hidden; background:#fff; }
+    .dp-head { display:flex; align-items:center; gap:8px; padding:10px 12px; background:hsl(240 4.8% 95.9%); border-bottom:1px solid hsl(240 5.9% 90%); font-size:12px; font-weight:600; }
+    .dp-count { margin-left:auto; color:hsl(240 5% 28%); font-weight:600; }
+    .dp-fields { display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; border-bottom:1px solid hsl(240 5.9% 90%); }
+    .dp-field { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; border-radius:999px; padding:3px 9px; background:rgba(0,58,184,.08); color:#003AB8; }
+    .dp-field.muted { background:hsl(240 4.8% 95.9%); color:hsl(240 5% 40%); }
+    .dp-scroll { max-height:230px; overflow:auto; }
+    .dp-table { width:100%; border-collapse:collapse; font-size:12px; white-space:nowrap; }
+    .dp-table th { position:sticky; top:0; background:#fff; text-align:left; font-weight:600; color:hsl(240 5% 28%); padding:8px 10px; border-bottom:1px solid hsl(240 5.9% 90%); }
+    .dp-table td { padding:8px 10px; border-bottom:1px solid hsl(240 5.9% 94%); color:#1a1a20; }
+    .dp-table tr:last-child td { border-bottom:0; }
+    .dp-foot { padding:8px 12px; font-size:11px; color:hsl(240 5% 40%); background:hsl(240 4.8% 95.9%); }
+    /* evaluation form big buttons */
+    .eval-card { position:relative; display:flex; gap:12px; align-items:flex-start; text-align:left; width:100%; padding:14px; border:1.5px solid hsl(240 5.9% 90%); border-radius:12px; background:#fff; cursor:pointer; font-family:inherit; transition:all .15s; }
+    .eval-card:hover { border-color:#003AB8; background:rgba(0,58,184,.03); }
+    .eval-card.selected { border-color:#003AB8; background:rgba(0,58,184,.06); box-shadow:0 0 0 1px #003AB8 inset; }
+    .eval-ic { flex:none; display:grid; place-items:center; width:54px; height:42px; }
+    .eval-tt { font-size:14px; font-weight:600; }
+    .eval-ds { font-size:11.5px; color:hsl(240 5% 28%); margin-top:2px; line-height:1.4; }
+    .eval-check { position:absolute; top:10px; right:10px; opacity:0; color:#003AB8; transition:opacity .15s; }
+    .eval-card.selected .eval-check { opacity:1; }
+    /* agent picker */
+    .agent-card { display:flex; flex-direction:column; align-items:center; gap:5px; padding:14px 10px; border:1.5px solid hsl(240 5.9% 90%); border-radius:12px; background:#fff; cursor:pointer; font-family:inherit; transition:all .15s; }
+    .agent-card:hover { border-color:#003AB8; }
+    .agent-card.selected { border-color:#003AB8; background:rgba(0,58,184,.06); box-shadow:0 0 0 1px #003AB8 inset; }
+    .ag-av { position:relative; overflow:hidden; width:46px; height:46px; border-radius:50%; display:grid; place-items:center; color:#fff; font-weight:700; font-size:18px; box-shadow:0 2px 6px rgba(0,0,0,.15); }
+    .ag-av img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .ag-av.viera { background:linear-gradient(135deg,#d36ba8,#7d4bd0); }
+    .ag-av.alex { background:linear-gradient(135deg,#3a7bd5,#003AB8); }
+    .agent-name { font-weight:600; font-size:14px; color:var(--ink, #14141a); }
+    .agent-role { font-size:11px; color:hsl(240 5% 28%); }
+    /* progress tracker */
+    .tracker { position:absolute; top:16px; left:16px; z-index:6; width:300px; max-height:calc(100% - 32px); overflow-y:auto; background:#fbfbfc; border:none; border-radius:18px; box-shadow:0 8px 26px rgba(0,0,0,.07); padding:20px; }
+    .trk-step { display:flex; gap:12px; padding:2px 4px; border-radius:10px; cursor:pointer; }
+    .trk-step:hover { background:rgba(0,0,0,.03); }
+    .trk-rail { display:flex; flex-direction:column; align-items:center; }
+    .trk-line { width:2px; flex:1 1 auto; min-height:26px; background:hsl(240 5% 86%); margin:4px 0; border-radius:2px; }
+    .trk-line.on { background:#16a34a; }
+    .trk-ic { flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:700; }
+    .trk-ic.todo { background:hsl(240 5% 86%); color:#fff; }
+    .trk-ic.done { background:#16a34a; color:#fff; }
+    .trk-body { padding-bottom:14px; }
+    .trk-name { font-size:13.5px; font-weight:600; }
+    .trk-must { display:flex; align-items:center; gap:7px; font-size:11px; color:hsl(240 5% 45%); margin-top:4px; }
+    .trk-must .dot { width:7px; height:7px; border-radius:50%; background:#cbd5e1; flex:none; }
+    .trk-must.ok { color:#16a34a; }
+    .trk-must.ok .dot { background:#16a34a; }
+    .trk-tag { font-size:8.5px; font-weight:800; letter-spacing:.4px; background:#fef3c7; color:#92400e; border-radius:4px; padding:1px 5px; margin-left:auto; flex:none; }
+    .trk-must.ok .trk-tag { background:#dcfce7; color:#16a34a; }
+    .trk-ready { margin-top:10px; display:flex; align-items:center; justify-content:center; gap:7px; font-size:12.5px; font-weight:700; border-radius:9px; padding:9px; }
+    .trk-ready.no { background:hsl(240 4.8% 95%); color:hsl(240 5% 45%); }
+    .trk-ready.yes { background:#dcfce7; color:#16a34a; }
+    /* node done state */
+    .node-check { position:absolute; top:9px; right:9px; width:22px; height:22px; border-radius:50%; background:#16a34a; color:#fff; display:none; place-items:center; box-shadow:0 2px 6px rgba(22,163,74,.4); }
+    .node.is-done .node-check { display:grid; }
+    .node.is-done { box-shadow:0 0 0 2px rgba(22,163,74,.45), 0 6px 20px rgba(22,163,74,.16) !important; }
+    /* behavior toggles */
+    .beh { background:#fff; border:1px solid hsl(240 5.9% 88%); border-radius:11px; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+    .beh-head { display:flex; align-items:center; gap:10px; padding:11px 13px; }
+    .beh-head .text { font-size:14px; font-weight:500; flex:1; }
+    .beh-exp { color:hsl(240 5% 55%); cursor:pointer; display:grid; place-items:center; transition:transform .2s; }
+    .beh.open .beh-exp { transform:rotate(180deg); }
+    .beh-body { display:none; padding:0 13px 12px; font-size:12px; }
+    .beh.open .beh-body { display:flex; flex-direction:column; gap:5px; }
+    .beh-row { display:flex; gap:7px; align-items:flex-start; }
+    .beh-row .tag { font-size:9px; font-weight:800; border-radius:4px; padding:1px 6px; flex:none; margin-top:1px; }
+    .beh-row.on .tag { background:#dcfce7; color:#16a34a; }
+    .beh-row.off .tag { background:hsl(240 4.8% 93%); color:hsl(240 5% 45%); }
+    /* integrations */
+    .int-card { border:1px solid hsl(240 5.9% 88%); background:#fff; border-radius:14px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+    .int-card.on { border-color:#86efac; background:#f6fdf9; }
+    .int-logo { display:grid; place-items:center; width:46px; height:46px; border-radius:12px; background:hsl(240 4.8% 96%); flex:none; }
+    .int-logo img { width:27px; height:27px; object-fit:contain; }
+    .int-fallback { color:#003AB8; }
+    .int-name { font-size:16.5px; font-weight:700; }
+    .int-cat { font-size:10px; font-weight:700; letter-spacing:.3px; background:hsl(240 4.8% 93%); color:hsl(240 5% 38%); border-radius:5px; padding:2px 6px; }
+    .int-btn { flex:none; border-radius:8px; padding:8px 15px; font-size:13px; font-weight:600; background:#003AB8; color:#fff; border:0; cursor:pointer; }
+    .int-btn:hover { filter:brightness(1.08); }
+    .int-btn.done { background:#fff; border:1px solid #86efac; color:#16a34a; }
+    .int-toggle { margin-top:13px; display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#003AB8; background:none; border:0; cursor:pointer; padding:0; }
+    .int-outs { margin-top:11px; display:flex; flex-direction:column; gap:9px; border-top:1px solid hsl(240 5.9% 92%); padding-top:12px; }
+    .int-out { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    /* zoom control */
+    .zoom-ctl { position:absolute; bottom:16px; right:16px; z-index:5; display:flex; align-items:center; gap:2px; background:#fff; border:1px solid hsl(240 5.9% 90%); border-radius:10px; padding:3px; box-shadow:0 2px 8px rgba(0,0,0,.1); }
+    .zoom-ctl button { width:30px; height:30px; border:0; background:transparent; border-radius:7px; cursor:pointer; color:hsl(240 5% 28%); display:grid; place-items:center; }
+    .zoom-ctl button:hover { background:hsl(240 4.8% 95.9%); }
+    .zoom-ctl .zlbl { min-width:46px; text-align:center; font-size:12px; font-weight:600; }
+    /* toast notifications */
+    #toasts { position:fixed; top:16px; right:16px; z-index:60; display:flex; flex-direction:column; gap:8px; }
+    .toast { display:flex; align-items:center; gap:10px; min-width:240px; max-width:340px; background:#fff; border:1px solid hsl(240 5.9% 90%); border-left:4px solid #16a34a; border-radius:10px; padding:11px 14px; box-shadow:0 8px 24px rgba(0,0,0,.14); font-size:13.5px; animation:toastIn .25s ease; }
+    .toast.warn { border-left-color:#d97706; }
+    @keyframes toastIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+    /* flow canvas */
+    .canvas { background-color:#fbfbfc; background-image:radial-gradient(circle, #e2e2e8 0.8px, transparent 0.8px); background-size:28px 28px; cursor:grab; }
+    .canvas:active { cursor:grabbing; }
+    .canvas-inner { position:relative; min-width:1500px; min-height:1300px; }
+    .connSvg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:1; }
+    .node { position:absolute; width:252px; min-height:150px; display:flex; flex-direction:column; justify-content:center; background:#fff; border:2px solid hsl(240 5.9% 90%); border-radius:calc(0.625rem + 4px); box-shadow:0 1px 3px rgba(0,0,0,.08); cursor:pointer; transition:border-color .15s, box-shadow .15s; z-index:2; }
+    .node.frame-start { border-color:#eab308; }
+    .node.frame-mid { border-color:#003AB8; }
+    .node.frame-end { border-color:#db2777; }
+    .node:hover { box-shadow:0 6px 20px rgba(0,58,184,.16); }
+    .node.selected { box-shadow:0 0 0 3px rgba(0,58,184,.25), 0 6px 20px rgba(0,58,184,.16); }
+    .node.selected { border-color:#003AB8; box-shadow:0 0 0 2px rgba(0,58,184,.25), 0 6px 20px rgba(0,58,184,.14); }
+    .node-label { position:absolute; top:-21px; left:2px; font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; padding:2px 8px; border-radius:6px; }
+    .lab-start { background:#fef3c7; color:#92400e; }
+    .lab-mid { background:rgba(0,58,184,.1); color:#003AB8; }
+    .lab-end { background:#fce7f3; color:#9d174d; }
+    .node-dot { position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); width:11px; height:11px; border-radius:50%; background:#fff; border:2px solid #003AB8; z-index:3; }
+    .node-dot.top { bottom:auto; top:-6px; }
+  </style>
+</head>
+<body class="text-foreground">
+  <div class="flex min-h-screen bg-background text-foreground">
+    <!-- Sidebar -->
+    <aside class="flex w-64 shrink-0 flex-col border-r border-border bg-card">
+      <div class="flex items-center justify-between px-5 py-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="users" class="h-6 w-6 text-[#003AB8]"></i>
+          <span class="text-xl font-bold text-[#003AB8]">instaview</span>
+        </div>
+        <i data-lucide="panel-left-close" class="h-5 w-5 text-muted-foreground"></i>
+      </div>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <div class="px-4 py-3">
+        <p class="mb-1 text-xs text-muted-foreground">Aktuálna firma</p>
+        <button class="flex w-full items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm">
+          <span class="flex items-center gap-2">
+            <span class="flex h-6 w-6 items-center justify-center rounded bg-[#003AB8]/20 text-xs font-semibold text-[#003AB8]">TE</span>
+            Testovanie 2
+          </span>
+          <i data-lucide="chevrons-up-down" class="h-4 w-4 text-muted-foreground"></i>
+        </button>
+      </div>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <div class="px-4 py-4">
+        <div class="flex items-center justify-between rounded-lg border border-[#003AB8]/30 bg-[#003AB8]/10 px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sparkles" class="h-4 w-4 text-[#003AB8]"></i>
+            <div class="leading-tight">
+              <p class="text-xs text-muted-foreground">AI kredity</p>
+              <p class="text-sm font-semibold">188.48</p>
+            </div>
+          </div>
+          <span class="rounded-md bg-[#003AB8] px-2.5 py-0.5 text-xs font-semibold text-white">Kúpiť</span>
+        </div>
+      </div>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <nav class="flex-1 space-y-1 px-3 py-3" id="mainNav"></nav>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <div class="space-y-1 px-3 py-3" id="bottomNav"></div>
+    </aside>
+
+    <!-- Main -->
+    <main class="relative flex-1 overflow-hidden">
+
+      <!-- VIEW: template select -->
+      <div id="viewTemplates" class="h-screen overflow-y-auto px-8 py-12">
+        <div class="mx-auto max-w-3xl text-center">
+          <h1 class="text-3xl font-bold">Vyberte šablónu</h1>
+          <p class="mt-2 text-muted-foreground">Začnite z hotovej šablóny a upravte si ju podľa seba.</p>
+        </div>
+        <div class="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-5 sm:grid-cols-2">
+          <button id="tplGeneral" class="group relative flex flex-col items-start gap-4 rounded-xl border border-border bg-card p-7 text-left shadow-sm transition-all hover:border-[#003AB8] hover:shadow-md">
+            <span id="tplLive" class="absolute right-4 top-4 hidden items-center gap-1.5 rounded-full border border-green-300 bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
+              <span class="pulse-call flex h-4 w-4 items-center justify-center rounded-full bg-green-600 text-white"><i data-lucide="phone" class="ringing h-2.5 w-2.5"></i></span>
+              Prebieha hovor
+            </span>
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="phone-call" class="h-6 w-6"></i></span>
+            <span class="text-lg font-semibold">Všeobecný hovor</span>
+            <span class="text-sm text-muted-foreground">Univerzálna šablóna telefonického rozhovoru s nastavením otázok a vyhodnotenia.</span>
+            <span class="mt-1 flex items-center gap-1.5 text-sm font-medium text-[#003AB8]">Použiť šablónu <i data-lucide="arrow-right" class="h-4 w-4"></i></span>
+          </button>
+          <div class="flex flex-col items-start gap-4 rounded-xl border border-dashed border-border bg-card/50 p-7 text-left opacity-60">
+            <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-muted text-muted-foreground"><i data-lucide="more-horizontal" class="h-6 w-6"></i></span>
+            <span class="text-lg font-semibold">Ďalšie šablóny</span>
+            <span class="text-sm text-muted-foreground">Čoskoro — screening, outreach a ďalšie typy hovorov.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: builder -->
+      <div id="viewBuilder" class="hidden h-screen flex-col">
+        <!-- topbar -->
+        <div class="flex items-center justify-between border-b border-border bg-card px-6 py-3">
+          <div class="flex items-center gap-3">
+            <button id="backToTpl" class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"><i data-lucide="arrow-left" class="h-4 w-4"></i></button>
+            <div>
+              <h2 class="text-lg font-bold leading-tight">Všeobecný hovor</h2>
+              <p class="text-xs text-muted-foreground">Nastavenie hovoru</p>
+            </div>
+            <div class="ml-3 flex rounded-md border border-border bg-card p-0.5 text-sm shadow-sm">
+              <button id="tabFlow" class="rounded-md bg-[#003AB8] px-3 py-1.5 font-medium text-white">Tok hovoru</button>
+              <button id="tabContacts" class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium text-muted-foreground hover:bg-muted">Kontakty <span id="contactsCount" class="rounded bg-muted px-1.5 text-xs">0</span></button>
+              <button id="tabIntegrations" class="rounded-md px-3 py-1.5 font-medium text-muted-foreground hover:bg-muted">Integrácie</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="callStatus" class="hidden items-center gap-2 rounded-full border border-green-300 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700">
+              <span class="pulse-call flex h-5 w-5 items-center justify-center rounded-full bg-green-600 text-white"><i data-lucide="phone" class="ringing h-3 w-3"></i></span>
+              <span id="callStatusText">Volá sa…</span>
+            </div>
+            <button id="launchBtn" class="flex items-center gap-2 rounded-md bg-[#003AB8] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#002a85]">
+              <i data-lucide="play" class="h-4 w-4"></i> Spustiť hovor
+            </button>
+          </div>
+        </div>
+
+        <!-- board / flow canvas -->
+        <div id="flowPanel" class="relative flex-1 overflow-hidden">
+          <div id="canvas" class="canvas absolute inset-0 overflow-auto">
+            <div id="canvasInner" class="canvas-inner px-16 py-14">
+              <svg id="connSvg" class="connSvg">
+                <defs>
+                  <marker id="arrow" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L8,3 z" fill="context-stroke"></path>
+                  </marker>
+                </defs>
+              </svg>
+            </div>
+          </div>
+          <p class="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground">Kliknite na blok pre úpravu</p>
+          <div class="tracker" id="tracker"></div>
+          <div class="zoom-ctl">
+            <button id="zoomOut" title="Oddialiť"><i data-lucide="minus" class="h-4 w-4"></i></button>
+            <span class="zlbl" id="zoomLabel">100 %</span>
+            <button id="zoomIn" title="Priblížiť"><i data-lucide="plus" class="h-4 w-4"></i></button>
+            <button id="zoomReset" title="Pôvodná veľkosť"><i data-lucide="maximize" class="h-4 w-4"></i></button>
+          </div>
+        </div>
+
+        <!-- contacts / monitoring -->
+        <div id="contactsPanel" class="hidden flex-1 overflow-y-auto px-8 py-6">
+          <!-- list view -->
+          <div id="contactsListView">
+            <div id="statusTabs" class="mb-4 flex flex-wrap gap-2"></div>
+            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b border-border text-left text-muted-foreground">
+                    <th class="px-5 py-3 font-medium">Meno</th>
+                    <th class="py-3 font-medium">Telefón</th>
+                    <th class="py-3 font-medium">Stav</th>
+                    <th class="px-5 py-3 text-right font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody id="contactsBody"></tbody>
+              </table>
+              <div id="contactsEmpty" class="hidden px-5 py-12 text-center text-sm text-muted-foreground">Žiadne kontakty v tejto kategórii.</div>
+            </div>
+          </div>
+          <!-- detail view -->
+          <div id="contactDetailView" class="hidden">
+            <button id="backToList" class="mb-4 flex items-center gap-1.5 text-sm font-medium text-[#003AB8]"><i data-lucide="arrow-left" class="h-4 w-4"></i> Späť na zoznam</button>
+            <div id="contactDetail"></div>
+          </div>
+        </div>
+
+        <!-- integrations -->
+        <div id="integrationsPanel" class="hidden flex-1 overflow-y-auto px-8 py-6">
+          <div class="mx-auto max-w-3xl">
+            <div class="mb-6 flex items-start gap-3 rounded-xl border border-[#003AB8]/25 bg-[#003AB8]/5 p-4">
+              <i data-lucide="info" class="mt-0.5 h-5 w-5 shrink-0 text-[#003AB8]"></i>
+              <div>
+                <p class="text-base font-bold">Ako to funguje</p>
+                <p class="mt-1 text-sm text-muted-foreground">Stačí splniť 4 must-have kroky v „Tok hovoru" a váš navolávací agent je pripravený volať. Voliteľne ho napojte na svoje nástroje — kontakty aj výsledky hovorov sa potom synchronizujú automaticky.</p>
+              </div>
+            </div>
+            <h3 class="mb-1 text-2xl font-bold">Napojenie na nástroje</h3>
+            <p class="mb-5 text-sm text-muted-foreground">Prepojte agenta s vaším CRM, ATS a komunikačnými nástrojmi. Pri každom nástroji si v „Výstupy a notifikácie" nastavíte, čo a kedy sa má posielať.</p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2" id="integrationsGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT config drawer -->
+      <aside id="drawer" class="absolute right-0 top-0 z-40 flex h-screen max-w-[95vw] translate-x-full flex-col border-l border-border bg-card shadow-2xl" style="width:460px">
+        <div id="drawerResize" class="absolute left-0 top-0 z-10 h-full w-2 cursor-ew-resize hover:bg-[#003AB8]/20" title="Potiahnutím zmeňte šírku"></div>
+        <div class="flex items-center justify-between border-b border-border px-5 py-4">
+          <h3 id="drawerTitle" class="text-base font-bold"></h3>
+          <button id="drawerClose" class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"><i data-lucide="x" class="h-5 w-5"></i></button>
+        </div>
+        <div id="drawerBody" class="flex-1 overflow-y-auto bg-[hsl(240_4.8%_94.5%)] px-5 py-5"></div>
+      </aside>
+    </main>
+  </div>
+
+  <div id="toasts"></div>
+
+  <script>
+    // ---------- sidebar ----------
+    const navItems = [
+      { label: "Prehľad", icon: "layout-grid", href: "dashboard-preview.html" },
+      { label: "Pohovory", icon: "message-square" },
+      { label: "Pracovné pozície", icon: "briefcase" },
+      { label: "Kandidáti", icon: "clipboard-list" },
+      { label: "Vyhľadávanie talentov", icon: "search", href: "instaview-sourcing-agent.html" },
+      { label: "Agenti", icon: "bot", href: "agents-preview.html" },
+      { label: "Design agent", icon: "sparkles", href: "design-agent.html", active: true },
+    ];
+    const bottomNav = [
+      { label: "Fakturácia a spotreba", icon: "credit-card" },
+      { label: "Nastavenia", icon: "settings" },
+      { label: "Podpora", icon: "help-circle" },
+    ];
+    document.getElementById("mainNav").innerHTML = navItems.map(i => {
+      const cls = `flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${i.active ? "bg-[#003AB8]/15 text-[#003AB8]" : "text-foreground hover:bg-muted"}`;
+      const inner = `<i data-lucide="${i.icon}" class="h-4 w-4"></i>${i.label}`;
+      return i.href ? `<a href="${i.href}" class="${cls}">${inner}</a>` : `<button class="${cls}">${inner}</button>`;
+    }).join("");
+    document.getElementById("bottomNav").innerHTML = bottomNav.map(i => `
+      <button class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+        <i data-lucide="${i.icon}" class="h-4 w-4"></i>${i.label}</button>`).join("");
+
+    // ---------- view switching ----------
+    const viewTemplates = document.getElementById("viewTemplates");
+    const viewBuilder = document.getElementById("viewBuilder");
+    document.getElementById("tplGeneral").onclick = () => {
+      viewTemplates.classList.add("hidden");
+      viewBuilder.classList.remove("hidden");
+      viewBuilder.classList.add("flex");
+      lucide.createIcons();
+      requestAnimationFrame(() => { drawConnections(); renderTracker(); const c = document.getElementById("canvas"); if (c) { c.scrollLeft = 120; c.scrollTop = 0; } });
+    };
+    window.addEventListener("resize", () => { if (!viewBuilder.classList.contains("hidden")) drawConnections(); });
+    document.getElementById("backToTpl").onclick = () => {
+      viewBuilder.classList.add("hidden");
+      viewBuilder.classList.remove("flex");
+      viewTemplates.classList.remove("hidden");
+      closeDrawer();
+    };
+
+    // ---------- board blocks (flow nodes) ----------
+    const blocks = [
+      { id: "who",   n: 1, icon: "phone-outgoing", title: "Koho volať & agent", desc: "Príjemca, agent, hlas a dĺžka", label: "Začiatok", color: "#eab308", x: 480, y: 70 },
+      { id: "intro", n: 2, icon: "message-square-text", title: "Úvod", desc: "Úvodná veta a kontext pre AI", label: "Počas hovoru", color: "#2563eb", x: 480, y: 290 },
+      { id: "questions", n: 3, icon: "list-checks", title: "Otázky & vyhodnotenie", desc: "Otázky, váhy a kritériá", label: "Počas hovoru", color: "#7c3aed", x: 480, y: 510 },
+      { id: "end",   n: 4, icon: "flag", title: "Ukončenie", desc: "Ako AI ukončí rozhovor", label: "Koniec", color: "#db2777", x: 480, y: 740 },
+    ];
+    const canvasInner = document.getElementById("canvasInner");
+    const connSvg = document.getElementById("connSvg");
+    const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; };
+    blocks.forEach((b, idx) => {
+      const node = document.createElement("div");
+      node.className = "node";
+      node.dataset.block = b.id;
+      node.style.left = b.x + "px";
+      node.style.top = b.y + "px";
+      node.style.borderColor = b.color;
+      node.style.background = hexA(b.color, 0.05);
+      node.style.setProperty("--nc", b.color);
+      node.innerHTML = `
+        <span class="node-label" style="background:${hexA(b.color,0.14)};color:${b.color}">${b.label}</span>
+        <span class="node-check"><i data-lucide="check" class="h-3.5 w-3.5"></i></span>
+        ${idx > 0 ? `<span class="node-dot top" style="border-color:${b.color}"></span>` : ''}
+        <div class="flex items-center gap-3 px-4 pb-2 pt-5">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style="background:${hexA(b.color,0.14)};color:${b.color}"><i data-lucide="${b.icon}" class="h-5 w-5"></i></span>
+          <span class="min-w-0 flex-1">
+            <span class="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">KROK ${b.n}</span>
+            <span class="block truncate text-[15px] font-semibold leading-tight">${b.title}</span>
+          </span>
+          <i data-lucide="pencil" class="h-4 w-4 shrink-0 text-muted-foreground"></i>
+        </div>
+        <div class="px-4 pb-5 pt-1 text-xs leading-relaxed text-muted-foreground">${b.desc}</div>
+        ${idx < blocks.length - 1 ? `<span class="node-dot" style="border-color:${b.color}"></span>` : ''}`;
+      canvasInner.appendChild(node);
+    });
+
+    function drawConnections(){
+      [...connSvg.querySelectorAll("path.conn")].forEach(p => p.remove());
+      for (let i = 0; i < blocks.length - 1; i++){
+        const a = canvasInner.querySelector(`.node[data-block="${blocks[i].id}"]`);
+        const b = canvasInner.querySelector(`.node[data-block="${blocks[i+1].id}"]`);
+        if (!a || !b) continue;
+        const x1 = a.offsetLeft + a.offsetWidth / 2, y1 = a.offsetTop + a.offsetHeight;
+        const x2 = b.offsetLeft + b.offsetWidth / 2, y2 = b.offsetTop;
+        const my = (y1 + y2) / 2;
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("class", "conn");
+        path.setAttribute("d", `M${x1} ${y1} C${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", blocks[i].color || "#003AB8");
+        path.setAttribute("stroke-width", "2.5");
+        path.setAttribute("marker-end", "url(#arrow)");
+        connSvg.appendChild(path);
+      }
+    }
+
+    // click on nodes (blocks are fixed in place for now)
+    canvasInner.querySelectorAll(".node").forEach(node => {
+      node.addEventListener("click", () => openDrawer(node.dataset.block));
+    });
+
+    // pan the board by dragging empty space
+    (function(){
+      const canvas = document.getElementById("canvas");
+      let pan = null;
+      canvas.addEventListener("mousedown", (e) => {
+        if (e.target.closest(".node")) return;
+        pan = { x: e.clientX, y: e.clientY, sl: canvas.scrollLeft, st: canvas.scrollTop };
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (!pan) return;
+        canvas.scrollLeft = pan.sl - (e.clientX - pan.x);
+        canvas.scrollTop = pan.st - (e.clientY - pan.y);
+      });
+      window.addEventListener("mouseup", () => { pan = null; });
+    })();
+
+    // ---------- drawer ----------
+    const drawer = document.getElementById("drawer");
+    const drawerTitle = document.getElementById("drawerTitle");
+    const drawerBody = document.getElementById("drawerBody");
+    let lastUpload = null;
+    const cfg = { introText: "", aboutText: "", endText: "" };
+    const behaviors = [
+      { t: "Zvuky písania na klávesnici v pozadí", on: false, w: "Počas hovoru znie jemné klepkanie klávesnice — pôsobí prirodzene, akoby si agent robil poznámky.", wo: "Úplné ticho v pozadí." },
+      { t: "Spätné kanály (mhm, áno…)", on: false, w: "Agent reaguje krátkymi „mhm, áno“ — hovor je živší a ľudskejší.", wo: "Agent počúva potichu, bez pritakávania." },
+      { t: "Povoliť prerušenie agenta", on: false, w: "Volaný môže agenta kedykoľvek prerušiť a agent sa prispôsobí.", wo: "Agent vždy dohovorí svoju vetu." },
+      { t: "Detekcia odkazovača", on: true, w: "Ak to zdvihne odkazovač, agent to rozpozná a zanechá odkaz alebo zavolá neskôr.", wo: "Agent hovorí aj do odkazovača." },
+    ];
+    const escapeHtml = (s) => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+    function renderWhoUpload(){
+      if (!lastUpload) return;
+      const dz = document.getElementById("dropzone"); if (dz) dz.classList.add("hidden");
+      const chip = document.getElementById("fileChip"); if (chip) { chip.classList.remove("hidden"); chip.classList.add("flex"); }
+      const fn = document.getElementById("fileName"); if (fn) fn.textContent = lastUpload.name;
+      const rows = lastUpload.rows || [];
+      const dataCount = Math.max(0, rows.length - 1);
+      const fm = document.getElementById("fileMeta");
+      if (fm) fm.textContent = `${Math.max(1, Math.round(lastUpload.size/1024)).toLocaleString("sk-SK")} kB · ${dataCount.toLocaleString("sk-SK")} záznamov`;
+      const dp = document.getElementById("dataPreview"); if (!dp) return;
+      if (!rows.length) { dp.innerHTML = ""; return; }
+      const headers = rows[0];
+      const preview = rows.slice(1, 6);
+      const hl = headers.map(h => String(h).toLowerCase());
+      const has = (keys) => hl.some(h => keys.some(k => h.includes(k)));
+      const chips = [
+        has(["meno","name","kontakt"]) ? `<span class="dp-field"><i data-lucide="user" style="width:12px;height:12px"></i>Meno</span>` : "",
+        has(["telef","phone","mobil","číslo","cislo","tel"]) ? `<span class="dp-field"><i data-lucide="phone" style="width:12px;height:12px"></i>Telefón</span>` : "",
+        has(["email","mail"]) ? `<span class="dp-field"><i data-lucide="mail" style="width:12px;height:12px"></i>Email</span>` : "",
+        has(["firma","company","spoloč","organiz"]) ? `<span class="dp-field"><i data-lucide="building-2" style="width:12px;height:12px"></i>Firma</span>` : "",
+      ].filter(Boolean).join("");
+      dp.innerHTML = `
+        <div class="dp-wrap">
+          <div class="dp-head"><i data-lucide="table-2" style="width:14px;height:14px;color:#003AB8"></i> Náhľad údajov <span class="dp-count">${dataCount.toLocaleString("sk-SK")} záznamov</span></div>
+          ${chips ? `<div class="dp-fields">${chips}</div>` : ""}
+          <div class="dp-scroll"><table class="dp-table">
+            <thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead>
+            <tbody>${preview.map(r => `<tr>${headers.map((_,ci) => `<td>${escapeHtml(r[ci] ?? "")}</td>`).join("")}</tr>`).join("")}</tbody>
+          </table></div>
+          <div class="dp-foot">Zobrazené prvé ${preview.length} z ${dataCount.toLocaleString("sk-SK")} záznamov</div>
+        </div>`;
+      lucide.createIcons();
+    }
+    function openDrawer(id){
+      const b = blocks.find(x => x.id === id);
+      drawerTitle.textContent = b.title;
+      drawerBody.innerHTML = drawerContent[id]();
+      drawer.classList.remove("translate-x-full");
+      document.querySelectorAll(".node").forEach(c =>
+        c.classList.toggle("selected", c.dataset.block === id));
+      if (id === "questions") renderQuestions();
+      if (id === "who") renderWhoUpload();
+      lucide.createIcons();
+    }
+    function closeDrawer(){
+      drawer.classList.add("translate-x-full");
+      document.querySelectorAll(".node").forEach(c => c.classList.remove("selected"));
+    }
+    document.getElementById("drawerClose").onclick = closeDrawer;
+
+    // ---------- drawer content per block ----------
+    const drawerContent = {
+      who: () => `
+        <label class="lbl">Koho volať — zoznam kontaktov</label>
+        <label id="dropzone" class="mb-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-4 py-7 text-center transition-colors hover:border-[#003AB8] hover:bg-[#003AB8]/5">
+          <span class="flex h-11 w-11 items-center justify-center rounded-full bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="upload-cloud" class="h-6 w-6"></i></span>
+          <span class="text-sm font-medium">Nahrať dokument so zoznamom</span>
+          <span class="text-xs text-muted-foreground">CSV alebo XLSX · môže obsahovať tisíce kontaktov</span>
+          <input id="contactFile" type="file" accept=".csv,.xlsx,.xls" class="hidden" />
+        </label>
+        <div id="fileChip" class="hidden items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 shadow-sm">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="file-spreadsheet" class="h-5 w-5"></i></span>
+          <span class="min-w-0 flex-1">
+            <span id="fileName" class="block truncate text-sm font-medium"></span>
+            <span id="fileMeta" class="block text-xs text-muted-foreground"></span>
+          </span>
+          <button id="fileRemove" class="shrink-0 text-muted-foreground hover:text-red-500"><i data-lucide="x" class="h-4 w-4"></i></button>
+        </div>
+        <div id="dataPreview" class="mt-3"></div>
+        <button id="manualToggle" class="mb-5 mt-3 flex items-center gap-1.5 text-sm font-medium text-[#003AB8]"><i data-lucide="plus" class="h-4 w-4"></i> Pridať kontakt jednotlivo</button>
+        <div id="manualWrap" class="mb-5 hidden space-y-2">
+          <input class="field" placeholder="Meno" />
+          <input class="field" placeholder="+421 ..." />
+        </div>
+        <label class="lbl">Aký agent volá</label>
+        <div class="mb-3 grid grid-cols-2 gap-3" id="agentPick">
+          <button data-agent="casandra" class="agent-card selected">
+            <span class="ag-av viera"><img src="casandra.svg" alt="Casandra" onerror="this.remove()" />C</span>
+            <span class="agent-name">Casandra</span>
+            <span class="agent-role">Ženský hlas · SK</span>
+          </button>
+          <button data-agent="alex" class="agent-card">
+            <span class="ag-av alex"><img src="alex.svg" alt="Alex" onerror="this.remove()" />A</span>
+            <span class="agent-name">Alex</span>
+            <span class="agent-role">Mužský hlas · SK</span>
+          </button>
+        </div>
+        <button class="mb-5 flex w-full items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"><i data-lucide="volume-2" class="h-4 w-4"></i> Vypočuť hlas</button>
+
+        <label class="lbl">Správanie agenta</label>
+        <p class="-mt-1 mb-3 text-xs text-muted-foreground">Kliknite na šípku a pozrite si rozdiel s funkciou a bez nej.</p>
+        <div class="mb-5 space-y-2.5">
+          ${behaviors.map((b, i) => `
+            <div class="beh" data-beh="${i}">
+              <div class="beh-head">
+                <span class="text">${b.t}</span>
+                <span class="switch"><input type="checkbox" data-beh-sw="${i}" ${b.on ? 'checked' : ''} /><span class="track"></span><span class="thumb"></span></span>
+                <button class="beh-exp" data-beh-exp="${i}"><i data-lucide="chevron-down" class="h-4 w-4"></i></button>
+              </div>
+              <div class="beh-body">
+                <div class="beh-row on"><span class="tag">S TÝM</span><span>${b.w}</span></div>
+                <div class="beh-row off"><span class="tag">BEZ</span><span>${b.wo}</span></div>
+              </div>
+            </div>`).join("")}
+        </div>
+
+        <label class="lbl">Dĺžka rozhovoru</label>
+        <div class="flex items-center gap-2">
+          <input type="number" value="10" min="1" class="field w-24" /><span class="text-sm text-muted-foreground">minút</span>
+        </div>`,
+      intro: () => `
+        <label class="lbl">Úvodná veta (čo AI povie na začiatku)</label>
+        <textarea id="introVeta" class="field mb-5" rows="4" placeholder="Dobrý deň, volám z firmy Testovanie 2…">${cfg.introText}</textarea>
+        <label class="lbl">O čom bude rozhovor — info pre AI</label>
+        <textarea id="introAbout" class="field" rows="6" placeholder="Vysvetlite agentovi kontext: cieľ hovoru, dôležité informácie, tón…">${cfg.aboutText}</textarea>`,
+      questions: () => `
+        <div class="mb-3 flex items-center justify-between">
+          <span class="text-sm font-medium" id="qSectionTitle">Otázky a ich váhy</span>
+          <div class="flex items-center gap-2">
+            <span id="weightTotal" class="rounded-md border border-transparent bg-muted px-2.5 py-0.5 text-xs font-semibold"></span>
+            <button id="addQ" class="q-add" title="Pridať otázku"><i data-lucide="plus" class="h-4 w-4"></i></button>
+          </div>
+        </div>
+        <div id="qList" class="space-y-3"></div>
+
+        <div class="my-5 border-t border-border"></div>
+        <label class="lbl">Forma vyhodnotenia</label>
+        <p class="-mt-1 mb-3 text-xs text-muted-foreground">Vyberte, ako sa zobrazí výsledok po hovore. Môžete zvoliť viacero.</p>
+        <div id="evalForms" class="mb-5 space-y-2.5">
+          <button data-eval="score" class="eval-card selected"><i data-lucide="check" class="eval-check h-4 w-4"></i><span class="eval-ic"><svg width="50" height="40" viewBox="0 0 50 40" fill="none"><circle cx="25" cy="20" r="13" stroke="#cdd6f0" stroke-width="5"/><path d="M25 7a13 13 0 0 1 11.3 6.5" stroke="#003AB8" stroke-width="5" stroke-linecap="round"/><text x="25" y="24" text-anchor="middle" font-size="9" font-weight="700" fill="#003AB8">%</text></svg></span><span><span class="eval-tt">Skóre zhody (%)</span><span class="eval-ds">Percentuálna zhoda kandidáta s požiadavkami.</span></span></button>
+          <button data-eval="strengths" class="eval-card selected"><i data-lucide="check" class="eval-check h-4 w-4"></i><span class="eval-ic"><svg width="50" height="40" viewBox="0 0 50 40" fill="none"><circle cx="11" cy="13" r="6" fill="#dcfce7"/><path d="M8.5 13l2 2 3-3.5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="22" y1="13" x2="44" y2="13" stroke="#9db4ec" stroke-width="3" stroke-linecap="round"/><circle cx="11" cy="28" r="6" fill="#fee2e2"/><path d="M9 26l4 4M13 26l-4 4" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/><line x1="22" y1="28" x2="40" y2="28" stroke="#f0b9c4" stroke-width="3" stroke-linecap="round"/></svg></span><span><span class="eval-tt">Silné stránky & oblasti na zlepšenie</span><span class="eval-ds">Zoznam pozitív a oblastí na zlepšenie.</span></span></button>
+          <button data-eval="summary" class="eval-card selected"><i data-lucide="check" class="eval-check h-4 w-4"></i><span class="eval-ic"><svg width="50" height="40" viewBox="0 0 50 40" fill="none"><rect x="15" y="6" width="20" height="28" rx="3" stroke="#003AB8" stroke-width="2.5"/><line x1="19" y1="14" x2="31" y2="14" stroke="#9db4ec" stroke-width="2.5" stroke-linecap="round"/><line x1="19" y1="20" x2="31" y2="20" stroke="#9db4ec" stroke-width="2.5" stroke-linecap="round"/><line x1="19" y1="26" x2="27" y2="26" stroke="#9db4ec" stroke-width="2.5" stroke-linecap="round"/></svg></span><span><span class="eval-tt">Celkové hodnotenie</span><span class="eval-ds">Súhrnné textové zhrnutie pohovoru.</span></span></button>
+          <button data-eval="perq" class="eval-card"><i data-lucide="check" class="eval-check h-4 w-4"></i><span class="eval-ic"><svg width="50" height="40" viewBox="0 0 50 40" fill="none"><rect x="12" y="22" width="7" height="12" rx="2" fill="#9db4ec"/><rect x="22" y="14" width="7" height="20" rx="2" fill="#6f8fdc"/><rect x="32" y="8" width="7" height="26" rx="2" fill="#003AB8"/></svg></span><span><span class="eval-tt">Bodové hodnotenie otázok</span><span class="eval-ds">Skóre za každú otázku podľa jej váhy.</span></span></button>
+          <button data-eval="reco" class="eval-card"><i data-lucide="check" class="eval-check h-4 w-4"></i><span class="eval-ic"><svg width="50" height="40" viewBox="0 0 50 40" fill="none"><path d="M18 20h-3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3z" fill="#9db4ec"/><path d="M18 20l5-9a3 3 0 0 1 3 2l-1 6h7a3 3 0 0 1 3 3.5l-2 8a3 3 0 0 1-3 2.5H18z" fill="#003AB8"/></svg></span><span><span class="eval-tt">Odporúčanie</span><span class="eval-ds">Jasný výsledok: Áno / Možno / Nie.</span></span></button>
+          <button data-eval="transcript" class="eval-card"><i data-lucide="check" class="eval-check h-4 w-4"></i><span class="eval-ic"><svg width="50" height="40" viewBox="0 0 50 40" fill="none"><g stroke-linecap="round" stroke-width="3"><line x1="13" y1="16" x2="13" y2="24" stroke="#9db4ec"/><line x1="19" y1="10" x2="19" y2="30" stroke="#6f8fdc"/><line x1="25" y1="6" x2="25" y2="34" stroke="#003AB8"/><line x1="31" y1="12" x2="31" y2="28" stroke="#6f8fdc"/><line x1="37" y1="17" x2="37" y2="23" stroke="#9db4ec"/></g></svg></span><span><span class="eval-tt">Prepis & nahrávka</span><span class="eval-ds">Celý prepis hovoru a audio nahrávka.</span></span></button>
+        </div>
+
+        <div class="my-5 border-t border-border"></div>
+        <label class="lbl">Aké dáta sú dôležité</label>
+        <textarea class="field mb-4" rows="3" placeholder="napr. dostupnosť, očakávaný plat, lokalita…"></textarea>
+        <label class="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2.5 shadow-sm">
+          <span class="flex items-center gap-2 text-sm font-medium"><i data-lucide="circle-dot" class="h-4 w-4 text-[#003AB8]"></i> Zaznamenať hovor</span>
+          <span class="switch"><input id="recToggle" type="checkbox" checked /><span class="track"></span><span class="thumb"></span></span>
+        </label>`,
+      end: () => `
+        <label class="lbl">Záverečná veta (ako AI ukončí rozhovor)</label>
+        <textarea id="endVeta" class="field mb-5" rows="4" placeholder="Ďakujem za váš čas, ozveme sa vám čo najskôr. Dovidenia!">${cfg.endText}</textarea>
+        <label class="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2.5 shadow-sm">
+          <span class="text-sm font-medium">Ukončiť automaticky po vyčerpaní času</span>
+          <span class="switch"><input type="checkbox" checked /><span class="track"></span><span class="thumb"></span></span>
+        </label>`,
+    };
+
+    // ---------- questions logic ----------
+    let questions = [
+      { q: "", complexity: "Jednoduché", answer: "", weight: 100 },
+    ];
+    function renderQuestions(){
+      const list = document.getElementById("qList");
+      if (!list) return;
+      list.innerHTML = questions.map((it, i) => {
+        const done = it.q.trim() && it.answer.trim();
+        return `
+        <div class="q-card${done ? ' done' : ''}" data-q="${i}">
+          <div class="mb-2 flex items-center gap-2">
+            <span class="q-badge">${i+1}</span>
+            <span class="q-title">Otázka ${i+1}</span>
+            <span class="q-done"><i data-lucide="check" class="h-3 w-3"></i> Hotovo</span>
+            <button class="q-del ml-auto"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="q-mini">Otázka</span>
+              <textarea class="q-field q-text" rows="2" placeholder="Čo sa AI opýta…">${it.q}</textarea>
+            </div>
+            <div>
+              <span class="q-mini">Aká má byť odpoveď</span>
+              <textarea class="q-field q-ans" rows="2" placeholder="Správna odpoveď / v akom zmysle…">${it.answer}</textarea>
+            </div>
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <select class="q-field q-cx" style="width:auto"><option ${it.complexity==='Jednoduché'?'selected':''}>Jednoduché</option><option ${it.complexity==='Zložité'?'selected':''}>Zložité</option></select>
+            <div class="ml-auto flex items-center gap-1 rounded-md border border-border bg-white px-2 py-1">
+              <span class="text-xs text-muted-foreground">váha</span>
+              <input type="number" class="q-w w-10 border-0 text-center text-sm outline-none" value="${it.weight}" min="0" max="100" /><span class="text-sm text-muted-foreground">%</span>
+            </div>
+          </div>
+        </div>`;
+      }).join("");
+      const st = document.getElementById("qSectionTitle");
+      if (st) st.textContent = `Otázky a ich váhy (${questions.length})`;
+      updateWeightTotal();
+      lucide.createIcons();
+    }
+    function updateWeightTotal(){
+      const el = document.getElementById("weightTotal");
+      if (!el) return;
+      const total = questions.reduce((s, q) => s + (Number(q.weight)||0), 0);
+      el.textContent = `Spolu ${total}%`;
+      el.classList.toggle("bg-green-100", total === 100);
+      el.classList.toggle("text-green-700", total === 100);
+      el.classList.toggle("bg-amber-100", total !== 100);
+      el.classList.toggle("text-amber-700", total !== 100);
+    }
+    function distribute(){
+      const even = Math.round(100 / questions.length);
+      questions.forEach((q,i)=> q.weight = i === questions.length-1 ? 100 - even*(questions.length-1) : even);
+    }
+    drawerBody.addEventListener("click", (e) => {
+      const ag = e.target.closest(".agent-card");
+      if (ag) {
+        drawerBody.querySelectorAll(".agent-card").forEach(x => x.classList.toggle("selected", x === ag));
+        return;
+      }
+      const ev = e.target.closest(".eval-card");
+      if (ev) { ev.classList.toggle("selected"); return; }
+      const be = e.target.closest(".beh-exp");
+      if (be) { be.closest(".beh").classList.toggle("open"); return; }
+      if (e.target.closest("#manualToggle")) {
+        document.getElementById("manualWrap").classList.toggle("hidden");
+        return;
+      }
+      if (e.target.closest("#fileRemove")) {
+        lastUpload = null;
+        const chip = document.getElementById("fileChip");
+        chip.classList.add("hidden"); chip.classList.remove("flex");
+        document.getElementById("dropzone").classList.remove("hidden");
+        const inp = document.getElementById("contactFile"); if (inp) inp.value = "";
+        const dp = document.getElementById("dataPreview"); if (dp) dp.innerHTML = "";
+        return;
+      }
+      if (e.target.closest("#addQ")) {
+        questions.push({ q: "", complexity: "Jednoduché", answer: "", weight: 0 });
+        distribute(); renderQuestions(); renderTracker(); return;
+      }
+      const del = e.target.closest(".q-del");
+      if (del) {
+        if (questions.length <= 1) { questions[0] = { q: "", complexity: "Jednoduché", answer: "", weight: 100 }; renderQuestions(); renderTracker(); return; }
+        const i = +del.closest("[data-q]").dataset.q;
+        questions.splice(i, 1);
+        distribute();
+        renderQuestions(); renderTracker(); return;
+      }
+    });
+    drawerBody.addEventListener("change", (e) => {
+      if (e.target.dataset && e.target.dataset.behSw !== undefined) { behaviors[+e.target.dataset.behSw].on = e.target.checked; return; }
+      if (e.target.id !== "contactFile") return;
+      const f = e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        let rows = [];
+        try {
+          const wb = XLSX.read(new Uint8Array(ev.target.result), { type: "array" });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" })
+            .filter(r => r.some(c => String(c).trim() !== ""));
+        } catch (err) { rows = []; }
+        lastUpload = { name: f.name, size: f.size, rows };
+        renderWhoUpload();
+        if (rows.length > 1) {
+          const hl = rows[0].map(h => String(h).toLowerCase());
+          const find = (keys) => hl.findIndex(h => keys.some(k => h.includes(k)));
+          const ci = {
+            name: find(["meno","name","priezvisko","kontakt","full"]),
+            phone: find(["telef","phone","mobil","číslo","cislo","tel"]),
+            email: find(["email","mail"]),
+            company: find(["firma","company","spoloč","organiz"]),
+          };
+          const list = rows.slice(1).map((r, i) => {
+            const nm = ci.name >= 0 ? String(r[ci.name]).trim() : "";
+            return {
+              id: i,
+              name: nm || ("Kontakt " + (i + 1)),
+              phone: ci.phone >= 0 ? String(r[ci.phone]).trim() : "",
+              email: ci.email >= 0 ? String(r[ci.email]).trim() : "",
+              company: ci.company >= 0 ? String(r[ci.company]).trim() : "",
+              status: "added",
+            };
+          });
+          if (list.length) setContacts(list);
+        }
+      };
+      reader.readAsArrayBuffer(f);
+    });
+    drawerBody.addEventListener("input", (e) => {
+      if (e.target.id === "introVeta") { cfg.introText = e.target.value; renderTracker(); return; }
+      if (e.target.id === "introAbout") { cfg.aboutText = e.target.value; return; }
+      if (e.target.id === "endVeta") { cfg.endText = e.target.value; renderTracker(); return; }
+      const row = e.target.closest("[data-q]");
+      if (!row) return;
+      const i = +row.dataset.q;
+      if (e.target.classList.contains("q-text")) questions[i].q = e.target.value;
+      if (e.target.classList.contains("q-ans")) questions[i].answer = e.target.value;
+      if (e.target.classList.contains("q-cx")) questions[i].complexity = e.target.value;
+      if (e.target.classList.contains("q-w")) { questions[i].weight = +e.target.value; updateWeightTotal(); }
+      if (e.target.classList.contains("q-text") || e.target.classList.contains("q-ans")) {
+        row.classList.toggle("done", !!(questions[i].q.trim() && questions[i].answer.trim()));
+      }
+      renderTracker();
+    });
+
+    // ---------- progress tracker (must-have) ----------
+    function trackerData(){
+      const wTotal = questions.reduce((s, q) => s + (Number(q.weight) || 0), 0);
+      return [
+        { step: "who", name: "Koho volať & agent", musts: [
+          { t: "Nahrať zoznam kontaktov", done: !!lastUpload },
+          { t: "Vybraný agent a hlas", done: true },
+        ]},
+        { step: "intro", name: "Úvod", musts: [
+          { t: "Úvodná veta pre AI", done: cfg.introText.trim().length > 0 },
+        ]},
+        { step: "questions", name: "Otázky & vyhodnotenie", musts: [
+          { t: "Aspoň 1 otázka s odpoveďou", done: questions.some(q => q.q.trim() && q.answer.trim()) },
+          { t: "Váhy spolu 100 %", done: wTotal === 100 },
+        ]},
+        { step: "end", name: "Ukončenie", musts: [
+          { t: "Záverečná veta", done: cfg.endText.trim().length > 0 },
+        ]},
+      ];
+    }
+    function renderTracker(){
+      const el = document.getElementById("tracker");
+      if (!el) return;
+      const data = trackerData();
+      const allMusts = data.flatMap(d => d.musts);
+      const doneCount = allMusts.filter(m => m.done).length;
+      const ready = doneCount === allMusts.length;
+      // node done states
+      data.forEach(d => {
+        const node = document.querySelector(`.node[data-block="${d.step}"]`);
+        if (node) node.classList.toggle("is-done", d.musts.every(m => m.done));
+      });
+      el.innerHTML = `
+        <div class="mb-1 flex items-center justify-between">
+          <h4 class="text-[15px] font-bold">Pripravenosť agenta</h4>
+          <span class="text-sm font-semibold ${ready ? 'text-green-600' : 'text-muted-foreground'}">${doneCount}/${allMusts.length}</span>
+        </div>
+        <p class="mb-4 text-[11px] text-muted-foreground">Splňte must-have body a agent je pripravený volať.</p>
+        ${data.map((d, idx) => {
+          const stepDone = d.musts.every(m => m.done);
+          const last = idx === data.length - 1;
+          return `<div class="trk-step" data-go="${d.step}">
+            <div class="trk-rail">
+              <span class="trk-ic ${stepDone ? 'done' : 'todo'}">${stepDone ? '<i data-lucide=\"check\" class=\"h-3.5 w-3.5\"></i>' : (idx+1)}</span>
+              ${!last ? `<span class="trk-line ${stepDone ? 'on' : ''}"></span>` : ''}
+            </div>
+            <span class="trk-body min-w-0 flex-1">
+              <span class="trk-name">${d.name}</span>
+              ${d.musts.map(m => `<span class="trk-must ${m.done ? 'ok' : ''}"><span class="dot"></span>${m.t}<span class="trk-tag">MUST</span></span>`).join("")}
+            </span>
+          </div>`;
+        }).join("")}
+        <div class="trk-ready ${ready ? 'yes' : 'no'}">${ready ? '<i data-lucide="check-circle-2" class="h-4 w-4"></i> Agent je pripravený' : '<i data-lucide="loader" class="h-4 w-4"></i> Dokončite must-have body'}</div>`;
+      el.querySelectorAll(".trk-step").forEach(s => s.onclick = () => openDrawer(s.dataset.go));
+      lucide.createIcons();
+    }
+
+    // ---------- toast notifications + chime ----------
+    function chime(){
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const notes = [880, 1175];
+        notes.forEach((f, i) => {
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = "sine"; o.frequency.value = f;
+          o.connect(g); g.connect(ctx.destination);
+          const t = ctx.currentTime + i * 0.12;
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(0.18, t + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+          o.start(t); o.stop(t + 0.26);
+        });
+      } catch (e) {}
+    }
+    function toast(text, type){
+      const el = document.createElement("div");
+      el.className = "toast" + (type === "warn" ? " warn" : "");
+      const icon = type === "warn" ? "phone-missed" : "phone-call";
+      const color = type === "warn" ? "#d97706" : "#16a34a";
+      el.innerHTML = `<i data-lucide="${icon}" class="h-5 w-5" style="color:${color}"></i><span class="flex-1">${text}</span>`;
+      document.getElementById("toasts").appendChild(el);
+      lucide.createIcons();
+      setTimeout(() => { el.style.transition = "opacity .3s"; el.style.opacity = "0"; setTimeout(() => el.remove(), 300); }, 4200);
+    }
+
+    // ---------- launch / calling simulation ----------
+    let calling = false, simTimer = null;
+    const launchBtn = document.getElementById("launchBtn");
+    const callStatus = document.getElementById("callStatus");
+    const callStatusText = document.getElementById("callStatusText");
+
+    function setTplLive(on){
+      const t = document.getElementById("tplLive");
+      if (!t) return;
+      t.classList.toggle("hidden", !on);
+      t.classList.toggle("flex", on);
+    }
+    function startCall(){
+      calling = true;
+      setTplLive(true);
+      callStatus.classList.remove("hidden"); callStatus.classList.add("flex");
+      callStatusText.textContent = "Spúšťam kampaň…";
+      launchBtn.innerHTML = `<i data-lucide="square" class="h-4 w-4"></i> Zastaviť`;
+      launchBtn.classList.replace("bg-[#003AB8]", "bg-red-600");
+      launchBtn.classList.replace("hover:bg-[#002a85]", "hover:bg-red-700");
+      lucide.createIcons();
+      contacts.forEach(c => c.status = "added");
+      renderContacts();
+      let i = 0;
+      const step = () => {
+        if (!calling) return;
+        if (i >= contacts.length) { finishCall(); return; }
+        const c = contacts[i];
+        c.status = "in_call";
+        callStatusText.textContent = `Volá: ${c.name}`;
+        renderContacts();
+        simTimer = setTimeout(() => {
+          if (!calling) return;
+          const ok = Math.random() < 0.7;
+          c.status = ok ? "done" : "no_answer";
+          renderContacts();
+          if (ok) { toast(`Hovor dokončený — ${c.name}`, "ok"); chime(); }
+          else { toast(`Nezdvihol — ${c.name}`, "warn"); }
+          i++;
+          simTimer = setTimeout(step, 700);
+        }, 2200);
+      };
+      step();
+    }
+    function finishCall(){
+      calling = false;
+      callStatusText.textContent = "Kampaň dokončená";
+      toast("Kampaň dokončená 🎉", "ok"); chime();
+      setTimeout(resetCall, 1500);
+    }
+    function resetCall(){
+      calling = false;
+      setTplLive(false);
+      if (simTimer) { clearTimeout(simTimer); simTimer = null; }
+      callStatus.classList.add("hidden"); callStatus.classList.remove("flex");
+      launchBtn.innerHTML = `<i data-lucide="play" class="h-4 w-4"></i> Spustiť hovor`;
+      launchBtn.classList.replace("bg-red-600", "bg-[#003AB8]");
+      launchBtn.classList.replace("hover:bg-red-700", "hover:bg-[#002a85]");
+      lucide.createIcons();
+    }
+    launchBtn.onclick = () => { calling ? resetCall() : startCall(); };
+
+    // ---------- zoom ----------
+    let zoom = 1;
+    const applyZoom = () => {
+      canvasInner.style.transformOrigin = "top center";
+      canvasInner.style.transform = `scale(${zoom})`;
+      document.getElementById("zoomLabel").textContent = Math.round(zoom * 100) + " %";
+    };
+    document.getElementById("zoomIn").onclick = () => { zoom = Math.min(1.6, zoom + 0.1); applyZoom(); };
+    document.getElementById("zoomOut").onclick = () => { zoom = Math.max(0.5, zoom - 0.1); applyZoom(); };
+    document.getElementById("zoomReset").onclick = () => { zoom = 1; applyZoom(); };
+
+    // ---------- drawer resize (drag left edge) ----------
+    (function(){
+      const handle = document.getElementById("drawerResize");
+      handle.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        const startX = e.clientX, startW = drawer.offsetWidth;
+        const move = (ev) => {
+          const w = Math.min(window.innerWidth * 0.95, Math.max(360, startW + (startX - ev.clientX)));
+          drawer.style.width = w + "px";
+        };
+        const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); document.body.style.userSelect = ""; };
+        document.body.style.userSelect = "none";
+        window.addEventListener("mousemove", move);
+        window.addEventListener("mouseup", up);
+      });
+    })();
+
+    // ---------- contacts / monitoring ----------
+    const STATUS = {
+      added:    { label: "Pridaný",          badge: "bg-muted text-muted-foreground" },
+      calling:  { label: "Volá sa",          badge: "bg-amber-100 text-amber-700" },
+      in_call:  { label: "Práve telefonuje", badge: "bg-green-100 text-green-700" },
+      no_answer:{ label: "Nezdvihol",        badge: "bg-red-100 text-red-700" },
+      done:     { label: "Dovolané",         badge: "bg-[#003AB8]/10 text-[#003AB8]" },
+    };
+    const SAMPLE = [
+      ["Ján Novák","+421 901 234 567","in_call"],
+      ["Mária Kováčová","+421 902 345 678","calling"],
+      ["Peter Horváth","+421 903 456 789","done"],
+      ["Eva Tóthová","+421 904 567 890","no_answer"],
+      ["Martin Varga","+421 905 678 901","added"],
+      ["Lucia Balážová","+421 906 789 012","done"],
+      ["Tomáš Šimon","+421 907 890 123","added"],
+      ["Zuzana Lukáčová","+421 908 901 234","no_answer"],
+      ["Andrej Polák","+421 909 012 345","added"],
+      ["Katarína Urbanová","+421 910 123 456","done"],
+    ];
+    let contacts = SAMPLE.map((c,i)=>({ id:i, name:c[0], phone:c[1], status:c[2] }));
+    let activeFilter = "all";
+
+    function setContacts(list){ contacts = list; activeFilter = "all"; renderContacts(); renderTracker(); }
+    function statusCounts(){
+      const c = { all: contacts.length, added:0, calling:0, in_call:0, no_answer:0, done:0 };
+      contacts.forEach(x => c[x.status] = (c[x.status]||0) + 1);
+      return c;
+    }
+    function initials(n){ return n.trim().split(/\s+/).map(w=>w[0]||"").slice(0,2).join("").toUpperCase(); }
+    function renderTabs(){
+      const counts = statusCounts();
+      const tabs = [["all","Všetci"], ...Object.entries(STATUS).map(([k,v])=>[k,v.label])];
+      document.getElementById("statusTabs").innerHTML = tabs.map(([k,label])=>{
+        const active = activeFilter === k;
+        return `<button data-filter="${k}" class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${active ? "border-[#003AB8] bg-[#003AB8] text-white" : "border-border bg-card text-muted-foreground hover:bg-muted"}">${label} <span class="rounded ${active?'bg-white/20':'bg-muted'} px-1.5 text-xs">${counts[k]||0}</span></button>`;
+      }).join("");
+    }
+    function renderContacts(){
+      document.getElementById("contactsCount").textContent = contacts.length;
+      renderTabs();
+      const rows = contacts.filter(c => activeFilter==="all" || c.status===activeFilter);
+      document.getElementById("contactsEmpty").classList.toggle("hidden", rows.length>0);
+      document.getElementById("contactsBody").innerHTML = rows.map(c => {
+        const s = STATUS[c.status];
+        const live = (c.status==='in_call'||c.status==='calling') ? '<span class="h-1.5 w-1.5 rounded-full bg-current"></span>' : '';
+        return `<tr class="contact-row cursor-pointer border-b border-border last:border-0 hover:bg-muted/50" data-id="${c.id}">
+          <td class="px-5 py-3"><span class="flex items-center gap-3"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#003AB8]/10 text-xs font-semibold text-[#003AB8]">${initials(c.name)}</span><span class="min-w-0"><span class="block truncate font-medium">${c.name}</span>${c.email?`<span class="block truncate text-xs text-muted-foreground">${c.email}</span>`:(c.company?`<span class="block truncate text-xs text-muted-foreground">${c.company}</span>`:'')}</span></span></td>
+          <td class="py-3 text-muted-foreground">${c.phone||"—"}</td>
+          <td class="py-3"><span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.badge}">${live}${s.label}</span></td>
+          <td class="px-5 py-3 text-right"><i data-lucide="chevron-right" class="inline h-4 w-4 text-muted-foreground"></i></td>
+        </tr>`;
+      }).join("");
+      lucide.createIcons();
+    }
+    function showContactDetail(id){
+      const c = contacts.find(x=>x.id===id); if(!c) return;
+      const s = STATUS[c.status];
+      document.getElementById("contactDetail").innerHTML = `
+        <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <div class="flex items-center gap-4">
+            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-[#003AB8]/10 text-lg font-bold text-[#003AB8]">${initials(c.name)}</span>
+            <div class="min-w-0"><h3 class="truncate text-xl font-bold">${c.name}</h3><p class="truncate text-muted-foreground">${c.phone||"—"}</p>${c.email?`<p class="truncate text-sm text-muted-foreground">${c.email}</p>`:''}${c.company?`<p class="truncate text-sm text-muted-foreground">${c.company}</p>`:''}</div>
+            <span class="ml-auto shrink-0 inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${s.badge}">${s.label}</span>
+          </div>
+          <div class="mt-6 grid grid-cols-2 gap-4">
+            <div class="rounded-lg border border-border p-4"><p class="text-xs text-muted-foreground">Pokusov o hovor</p><p class="mt-1 text-2xl font-bold">${c.status==='no_answer'?2:c.status==='added'?0:1}</p></div>
+            <div class="rounded-lg border border-border p-4"><p class="text-xs text-muted-foreground">Trvanie hovoru</p><p class="mt-1 text-2xl font-bold">${c.status==='done'?'4:12':'—'}</p></div>
+          </div>
+          <h4 class="mb-2 mt-6 text-sm font-semibold">Priebeh</h4>
+          <div class="space-y-2 text-sm text-muted-foreground">
+            <div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-[#003AB8]"></span> Pridaný do zoznamu</div>
+            ${c.status!=='added'?'<div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-amber-500"></span> Pokus o hovor</div>':''}
+            ${c.status==='done'?'<div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-green-600"></span> Hovor dokončený</div>':''}
+            ${c.status==='no_answer'?'<div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-red-500"></span> Nezdvihol — naplánovaný ďalší pokus</div>':''}
+            ${c.status==='in_call'?'<div class="flex items-center gap-2 font-medium text-green-700"><span class="h-2 w-2 rounded-full bg-green-600"></span> Práve prebieha hovor…</div>':''}
+          </div>
+        </div>`;
+      document.getElementById("contactsListView").classList.add("hidden");
+      document.getElementById("contactDetailView").classList.remove("hidden");
+      lucide.createIcons();
+    }
+    document.getElementById("statusTabs").addEventListener("click", e=>{
+      const t = e.target.closest("[data-filter]"); if(!t) return;
+      activeFilter = t.dataset.filter; renderContacts();
+    });
+    document.getElementById("contactsBody").addEventListener("click", e=>{
+      const row = e.target.closest(".contact-row"); if(!row) return;
+      showContactDetail(+row.dataset.id);
+    });
+    document.getElementById("backToList").onclick = ()=>{
+      document.getElementById("contactDetailView").classList.add("hidden");
+      document.getElementById("contactsListView").classList.remove("hidden");
+    };
+
+    // tab switching: flow / contacts / integrations
+    const flowPanel = document.getElementById("flowPanel");
+    const contactsPanel = document.getElementById("contactsPanel");
+    const integrationsPanel = document.getElementById("integrationsPanel");
+    const tabFlow = document.getElementById("tabFlow");
+    const tabContacts = document.getElementById("tabContacts");
+    const tabIntegrations = document.getElementById("tabIntegrations");
+    function activateTab(view){
+      flowPanel.classList.toggle("hidden", view !== "flow");
+      contactsPanel.classList.toggle("hidden", view !== "contacts");
+      integrationsPanel.classList.toggle("hidden", view !== "integrations");
+      const on = "bg-[#003AB8] text-white", off = "text-muted-foreground hover:bg-muted";
+      tabFlow.className = `rounded-md px-3 py-1.5 font-medium ${view==='flow'?on:off}`;
+      tabContacts.className = `flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium ${view==='contacts'?on:off}`;
+      tabIntegrations.className = `rounded-md px-3 py-1.5 font-medium ${view==='integrations'?on:off}`;
+      if (view === "flow") requestAnimationFrame(() => { drawConnections(); renderTracker(); });
+      else if (view === "contacts") renderContacts();
+      else renderIntegrations();
+    }
+    tabFlow.onclick = () => activateTab("flow");
+    tabContacts.onclick = () => activateTab("contacts");
+    tabIntegrations.onclick = () => activateTab("integrations");
+
+    // ---------- integrations ----------
+    const integrations = [
+      { id:"hubspot", name:"HubSpot", cat:"CRM", slug:"hubspot", icon:"building-2", desc:"Synchronizuj kontakty a aktivitu hovorov.",
+        outputs:[{t:"Zapísať výsledok hovoru", on:true},{t:"Vytvoriť úlohu pri záujme", on:false}] },
+      { id:"salesforce", name:"Salesforce", cat:"CRM", slug:"salesforce", icon:"cloud", desc:"Zapisuj výsledky hovorov do CRM.",
+        outputs:[{t:"Zapísať výsledok hovoru", on:true},{t:"Aktualizovať lead status", on:false}] },
+      { id:"ats", name:"ATS / Recruitee", cat:"ATS", slug:"recruitee", icon:"users", desc:"Prepoj kandidátov z náborového systému.",
+        outputs:[{t:"Aktualizovať stav kandidáta", on:true},{t:"Pridať poznámku k pohovoru", on:false}] },
+      { id:"slack", name:"Slack", cat:"Komunikácia", slug:"slack", icon:"message-square", desc:"Notifikácie a správy o hovoroch.",
+        outputs:[{t:"Správa keď je hovor dokončený", on:true},{t:"Denný súhrn do kanála", on:false},{t:"Upozornenie pri záujme kandidáta", on:false}] },
+      { id:"gmail", name:"Gmail", cat:"E-mail", slug:"gmail", icon:"mail", desc:"Posielaj follow-up e-maily.",
+        outputs:[{t:"Follow-up e-mail kandidátovi", on:true},{t:"Notifikácia recruiterovi", on:false}] },
+      { id:"outlook", name:"Outlook", cat:"E-mail", slug:"microsoftoutlook", icon:"mail", desc:"Kalendár a e-maily z Microsoftu.",
+        outputs:[{t:"Follow-up e-mail", on:true},{t:"Vytvoriť stretnutie v kalendári", on:false}] },
+      { id:"excel", name:"Excel / CSV", cat:"Dáta", slug:"microsoftexcel", icon:"file-spreadsheet", desc:"Import a export zoznamov.",
+        outputs:[{t:"Export výsledkov na plochu", on:true},{t:"Automatický export po kampani", on:false}] },
+      { id:"sheets", name:"Google Sheets", cat:"Dáta", slug:"googlesheets", icon:"table-2", desc:"Živý zápis výsledkov do tabuľky.",
+        outputs:[{t:"Živý zápis výsledkov", on:true},{t:"Nový hárok pre každú kampaň", on:false}] },
+      { id:"word", name:"Microsoft 365 / Word", cat:"Dokumenty", slug:"microsoftword", icon:"file-text", desc:"Generuj dokumenty zo zhrnutí hovorov.",
+        outputs:[{t:"Dokument so zhrnutím hovoru", on:true},{t:"Uložiť na OneDrive", on:false}] },
+    ];
+    const connected = {}, expanded = {};
+    function renderIntegrations(){
+      const grid = document.getElementById("integrationsGrid");
+      if (!grid) return;
+      grid.innerHTML = integrations.map(it => `
+        <div class="int-card ${connected[it.id] ? 'on' : ''}">
+          <div class="flex items-start gap-3">
+            <span class="int-logo"><img src="${it.id}.png" alt="${it.name}" onerror="var t=+(this.dataset.t||0)+1;this.dataset.t=t;if(t===1){this.src='${it.id}.svg';}else if(t===2){this.src='${it.id}.jpg';}else if(t===3){this.src='https://cdn.simpleicons.org/${it.slug}';}else{this.style.display='none';this.nextElementSibling.style.display='grid';}"/><span class="int-fallback" style="display:none"><i data-lucide="${it.icon}" class="h-5 w-5"></i></span></span>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="int-name">${it.name}</span>
+                <span class="int-cat">${it.cat}</span>
+              </div>
+              <p class="mt-1 text-xs text-muted-foreground">${it.desc}</p>
+            </div>
+            <button data-conn="${it.id}" class="int-btn ${connected[it.id] ? 'done' : ''}">${connected[it.id] ? '✓ Pripojené' : 'Pripojiť'}</button>
+          </div>
+          <button class="int-toggle" data-exp="${it.id}"><i data-lucide="${expanded[it.id] ? 'chevron-up' : 'chevron-down'}" class="h-4 w-4"></i> Výstupy a notifikácie (${it.outputs.filter(o=>o.on).length}/${it.outputs.length})</button>
+          ${expanded[it.id] ? `<div class="int-outs">${it.outputs.map((o, oi) => `
+            <label class="int-out"><span class="text-sm">${o.t}</span><span class="switch"><input type="checkbox" ${o.on ? 'checked' : ''} data-out="${it.id}:${oi}"/><span class="track"></span><span class="thumb"></span></span></label>`).join("")}</div>` : ''}
+        </div>`).join("");
+      grid.querySelectorAll("[data-conn]").forEach(b => b.onclick = () => { connected[b.dataset.conn] = !connected[b.dataset.conn]; renderIntegrations(); });
+      grid.querySelectorAll("[data-exp]").forEach(b => b.onclick = () => { expanded[b.dataset.exp] = !expanded[b.dataset.exp]; renderIntegrations(); });
+      grid.querySelectorAll("[data-out]").forEach(c => c.onchange = () => { const [id, oi] = c.dataset.out.split(":"); integrations.find(x=>x.id===id).outputs[+oi].on = c.checked; renderIntegrations(); });
+      lucide.createIcons();
+    }
+
+    renderContacts();
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>

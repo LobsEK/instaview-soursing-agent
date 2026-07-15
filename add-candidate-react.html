@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InstaView — Add Candidate</title>
+
+<!-- Tailwind CSS (Play CDN) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+
+<!-- Inter font -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<!-- Babel Standalone (for JSX) -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- ESM imports for react + lucide-react -->
+<script type="importmap">
+{
+  "imports": {
+    "react":            "https://esm.sh/react@18.3.1",
+    "react/jsx-runtime":"https://esm.sh/react@18.3.1/jsx-runtime",
+    "react-dom":        "https://esm.sh/react-dom@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "lucide-react":     "https://esm.sh/lucide-react@0.469.0?deps=react@18.3.1"
+  }
+}
+</script>
+
+<style>
+  html, body, #root { height: 100%; }
+  body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+</style>
+</head>
+<body class="bg-slate-50">
+
+<div id="root"></div>
+
+<script type="text/babel" data-type="module" data-presets="react">
+import React, { useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import {
+  LayoutDashboard,
+  MessageSquare,
+  Briefcase,
+  Users,
+  Search,
+  Bot,
+  CreditCard,
+  Settings,
+  HelpCircle,
+  ArrowLeft,
+  Upload,
+  ChevronDown,
+  ChevronLeft,
+  Sparkles,
+  Building2
+} from 'lucide-react';
+
+function AddCandidatePage() {
+  const [activeTab, setActiveTab] = useState('CV Upload');
+
+  return (
+    <div className="flex h-screen w-screen bg-slate-50/50 font-sans text-slate-900 overflow-hidden">
+
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-white border-r border-slate-100 flex flex-col justify-between h-full shrink-0">
+        <div className="p-4 flex flex-col gap-6">
+
+          {/* Logo & Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white font-bold">
+                in
+              </div>
+              <span className="text-xl font-bold tracking-tight text-slate-900">instaview</span>
+            </div>
+            <button className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-50 transition">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Current Company Select */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Current Company</span>
+            <button className="flex items-center justify-between w-full border border-slate-200 rounded-lg px-3 py-2 text-sm hover:bg-slate-50 transition">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-bold text-slate-600">TE</span>
+                </div>
+                <span className="truncate font-medium text-slate-700">Testovanie 2</span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+            </button>
+          </div>
+
+          {/* AI Credits Widget */}
+          <div className="bg-violet-50/50 border border-violet-100 rounded-xl p-4 flex gap-3 items-start">
+            <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 shrink-0 mt-0.5">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[11px] font-semibold text-violet-600 uppercase tracking-wider">AI Credits</span>
+              <span className="text-lg font-bold text-violet-700 leading-tight">1095.47</span>
+              <span className="text-xs text-slate-500">Available</span>
+            </div>
+          </div>
+
+          {/* Navigation Menu */}
+          <nav className="flex flex-col gap-1 mt-2">
+            {[
+              { name: 'Dashboard', icon: LayoutDashboard },
+              { name: 'Interviews', icon: MessageSquare },
+              { name: 'Job Positions', icon: Briefcase, active: true },
+              { name: 'Candidates', icon: Users },
+              { name: 'Talent Sourcing', icon: Search },
+              { name: 'Agents', icon: Bot },
+            ].map((item) => (
+              <button
+                key={item.name}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                  item.active
+                    ? 'bg-violet-50 text-violet-600'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <item.icon className={`w-4 h-4 ${item.active ? 'text-violet-600' : 'text-slate-400'}`} />
+                {item.name}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-slate-100 flex flex-col gap-4">
+          <nav className="flex flex-col gap-1">
+            {[
+              { name: 'Billing & Usage', icon: CreditCard },
+              { name: 'Settings', icon: Settings },
+              { name: 'Support', icon: HelpCircle },
+            ].map((item) => (
+              <button
+                key={item.name}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+              >
+                <item.icon className="w-4 h-4 text-slate-400" />
+                {item.name}
+              </button>
+            ))}
+          </nav>
+
+          {/* User Profile */}
+          <button className="flex items-center justify-between w-full hover:bg-slate-50 p-2 rounded-lg transition text-left">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-sm shrink-0">
+                L
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-semibold text-slate-700 truncate">Luboši Repka</span>
+              </div>
+            </div>
+            <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 flex flex-col h-full overflow-y-auto p-8 lg:p-12">
+        <div className="max-w-4xl w-full mx-auto flex flex-col gap-6">
+
+          {/* Breadcrumb */}
+          <button className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition w-fit">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Job Position
+          </button>
+
+          {/* Page Headers */}
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Add Candidate</h1>
+            <p className="text-slate-500 mt-1">
+              Add a new candidate to this job position through manual entry, CV upload, or CSV import.
+            </p>
+          </div>
+
+          {/* Segmented Control / Tabs */}
+          <div className="bg-slate-100 p-1 rounded-xl inline-flex self-start gap-1">
+            {['Manual', 'CV Upload', 'CSV Import'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-5 py-1.5 text-sm font-medium rounded-lg transition ${
+                  activeTab === tab
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Dropzone Card */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div className="border-2 border-dashed border-slate-200 rounded-xl hover:border-violet-300 transition-colors flex flex-col items-center justify-center py-20 px-4 cursor-pointer group">
+              <div className="w-12 h-12 rounded-lg bg-slate-50 group-hover:bg-violet-50 flex items-center justify-center text-slate-400 group-hover:text-violet-600 transition-colors">
+                <Upload className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-semibold text-slate-800 mt-4">Upload CV Files</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Drag and drop CV files here, or click to browse
+              </p>
+              <p className="text-xs text-slate-400 mt-2">
+                Supported formats: PDF, DOC, DOCX, PNG, JPG (Max 10MB per file)
+              </p>
+            </div>
+          </div>
+
+          {/* Actions Footer */}
+          <div className="flex items-center justify-end gap-3 mt-2">
+            <button className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition">
+              Cancel
+            </button>
+            <button className="bg-violet-600 hover:bg-violet-700 text-white font-medium px-5 py-2.5 rounded-lg text-sm shadow-sm transition">
+              Parse CVs
+            </button>
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')).render(<AddCandidatePage />);
+</script>
+
+</body>
+</html>

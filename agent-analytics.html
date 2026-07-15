@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InstaView · Agent · Analytics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            border: "hsl(240 5.9% 90%)",
+            background: "hsl(240 4.8% 95.9%)",
+            foreground: "hsl(240 10% 3.9%)",
+            card: "hsl(0 0% 100%)",
+            muted: "hsl(240 4.8% 95.9%)",
+            "muted-foreground": "hsl(240 5% 28%)",
+            brand: "#003AB8",
+          },
+          borderRadius: {
+            sm: "calc(0.625rem - 4px)",
+            md: "calc(0.625rem - 2px)",
+            lg: "0.625rem",
+            xl: "calc(0.625rem + 4px)",
+          },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { background: hsl(240 4.8% 95.9%); }
+    .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; inset: 0; background: hsl(240 5% 80%); border-radius: 999px; transition: .2s; }
+    .slider:before { content: ""; position: absolute; height: 16px; width: 16px; left: 2px; top: 2px; background: white; border-radius: 50%; transition: .2s; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+    .switch input:checked + .slider { background: #003AB8; }
+    .switch input:checked + .slider:before { transform: translateX(16px); }
+    .seg { display: inline-flex; padding: 2px; border: 1px solid hsl(240 5.9% 90%); border-radius: 8px; background: white; }
+    .seg button { padding: 4px 12px; font-size: 12px; font-weight: 500; border-radius: 6px; color: hsl(240 5% 28%); }
+    .seg button.active { background: #111; color: white; }
+    .score-seg { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0b3d2b; height: 32px; overflow: hidden; white-space: nowrap; padding: 0 8px; }
+    .trash-red { color: #ef4444; }
+    .trash-red:hover { background: #fee2e2; }
+    .float-a { animation: floatA 6s ease-in-out infinite; }
+    .float-b { animation: floatA 7s ease-in-out infinite reverse; }
+    @keyframes floatA { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    /* Gradient orbs (Oreo-inspired) */
+    .orb { border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,.08), inset -2px -2px 8px rgba(0,0,0,.15), inset 2px 2px 6px rgba(255,255,255,.6); }
+    .orb-violet { background: radial-gradient(circle at 30% 30%, #a78bfa, #4c1d95); }
+    .orb-blue { background: radial-gradient(circle at 30% 30%, #60a5fa, #1e3a8a); }
+    .orb-pink { background: radial-gradient(circle at 30% 30%, #f9a8d4, #831843); }
+    .orb-amber { background: radial-gradient(circle at 30% 30%, #fcd34d, #7c2d12); }
+    .orb-emerald { background: radial-gradient(circle at 30% 30%, #6ee7b7, #064e3b); }
+    .orb-slate { background: radial-gradient(circle at 30% 30%, #cbd5e1, #1e293b); }
+    .orb-jade { background: radial-gradient(circle at 30% 30%, #a7f3d0, #047857); }
+    .mono-label { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: hsl(240 5% 40%); }
+    /* colourful hashtag chip */
+    .hchip { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+    .hchip-1 { background: #fce7f3; color: #9d174d; }
+    .hchip-2 { background: #fef3c7; color: #92400e; }
+    .hchip-3 { background: #dcfce7; color: #166534; }
+    .hchip-4 { background: #e0e7ff; color: #3730a3; }
+    .hchip-5 { background: #cffafe; color: #155e75; }
+    .hchip-6 { background: #ffe4e6; color: #9f1239; }
+    .hchip-7 { background: #f3e8ff; color: #6b21a8; }
+    .hchip-8 { background: #ecfccb; color: #365314; }
+  </style>
+</head>
+<body class="text-foreground">
+  <div class="flex min-h-screen bg-background text-foreground">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="flex w-64 shrink-0 flex-col border-r border-border bg-card transition-all duration-200">
+      <div class="flex items-center justify-between px-5 py-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="users" class="h-6 w-6 text-brand"></i>
+          <span class="text-xl font-bold text-brand">instaview</span>
+        </div>
+        <button id="sidebarToggle" class="text-muted-foreground hover:text-foreground"><i data-lucide="panel-left-close" class="h-5 w-5"></i></button>
+      </div>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <div class="px-4 py-3">
+        <p class="mb-1 text-xs text-muted-foreground">Selected company</p>
+        <button class="flex w-full items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm">
+          <span class="flex items-center gap-2">
+            <span class="flex h-6 w-6 items-center justify-center rounded bg-brand/20 text-xs font-semibold text-brand">IN</span>
+            InstaView
+          </span>
+          <i data-lucide="chevrons-up-down" class="h-4 w-4 text-muted-foreground"></i>
+        </button>
+      </div>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <div class="px-4 py-4">
+        <div class="flex items-center justify-between rounded-lg border border-brand/30 bg-brand/10 px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sparkles" class="h-4 w-4 text-brand"></i>
+            <div class="leading-tight">
+              <p class="text-xs text-muted-foreground">AI Credits</p>
+              <p class="text-sm font-semibold">406.55</p>
+              <p class="text-[10px] text-muted-foreground">Available</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <nav class="flex-1 space-y-1 px-3 py-3" id="mainNav"></nav>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <div class="space-y-1 px-3 py-3" id="bottomNav"></div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto">
+      <div class="sticky top-0 z-10 border-b border-border bg-card">
+        <div class="flex items-center justify-between gap-4 px-8 py-3">
+          <div class="flex flex-1 items-center gap-2">
+            <button id="sidebarOpen" class="hidden h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-muted-foreground shadow-sm hover:bg-muted"><i data-lucide="panel-left-open" class="h-5 w-5"></i></button>
+            <input placeholder="Agent name" class="h-9 max-w-md flex-1 rounded-md border border-border bg-card px-3 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" />
+            <span class="rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">Phone</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="feedbackBtn" class="flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground" title="Send feedback">
+              <i data-lucide="message-square-plus" class="h-3.5 w-3.5"></i> Feedback
+            </button>
+            <button id="tryAgentBtn" class="flex items-center gap-1.5 rounded-md border border-brand/40 bg-brand/5 px-3 py-2 text-sm font-medium text-brand shadow-sm hover:bg-brand/10">
+              <i data-lucide="phone-call" class="h-4 w-4"></i> Try Agent
+            </button>
+            <button class="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm hover:bg-muted">Cancel</button>
+            <button class="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#002a85]">Create Agent</button>
+          </div>
+        </div>
+        <div class="flex items-center px-8">
+          <!-- Must-have / bonus legend -->
+          <div class="mr-3 hidden items-center gap-2 text-[10px] text-muted-foreground lg:flex">
+            <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-500"></span>Must have</span>
+            <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full border border-slate-300 bg-white"></span>Bonus</span>
+            <span class="ml-1 h-4 w-px bg-border"></span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button class="flex items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground"><span class="h-2 w-2 rounded-full bg-amber-500" title="Must have"></span><i data-lucide="workflow" class="h-4 w-4"></i>Flow</button>
+            <button class="flex items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground"><span class="h-2 w-2 rounded-full bg-amber-500" title="Must have"></span><i data-lucide="info" class="h-4 w-4"></i>Context</button>
+            <button class="flex items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground"><span class="h-2 w-2 rounded-full bg-amber-500" title="Must have"></span><i data-lucide="mic" class="h-4 w-4"></i>Voice</button>
+            <button class="flex items-center gap-1.5 border-b-2 border-brand px-3 py-2.5 text-sm font-medium text-foreground"><span class="h-2 w-2 rounded-full border border-slate-300 bg-white" title="Bonus"></span><i data-lucide="bar-chart-3" class="h-4 w-4"></i>Analytics</button>
+          </div>
+          <div class="ml-auto flex items-center gap-1">
+            <button class="flex items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground"><i data-lucide="settings" class="h-4 w-4"></i>Settings</button>
+            <button class="flex items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground"><i data-lucide="plug" class="h-4 w-4"></i>Integrations</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Try Agent popover -->
+      <div id="tryAgentPop" class="fixed right-6 top-16 z-50 hidden w-80 rounded-xl border border-border bg-card p-4 shadow-xl">
+        <div class="mb-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/10 text-brand"><i data-lucide="phone-call" class="h-4 w-4"></i></div>
+            <div>
+              <p class="text-sm font-semibold">Test your agent</p>
+              <p class="text-[11px] text-muted-foreground">Enter your name and start a test call</p>
+            </div>
+          </div>
+          <button id="tryAgentClose" class="text-muted-foreground hover:text-foreground"><i data-lucide="x" class="h-4 w-4"></i></button>
+        </div>
+        <div class="space-y-2">
+          <div>
+            <p class="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Name</p>
+            <input placeholder="e.g. Luboš" class="h-9 w-full rounded-md border border-border bg-card px-3 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" />
+          </div>
+          <div>
+            <p class="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Phone (optional)</p>
+            <input placeholder="+421…" class="h-9 w-full rounded-md border border-border bg-card px-3 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" />
+          </div>
+          <button class="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#002a85]"><i data-lucide="phone" class="h-4 w-4"></i>Start call</button>
+        </div>
+      </div>
+
+      <!-- Feedback popover -->
+      <div id="feedbackPop" class="fixed right-6 top-16 z-50 hidden w-80 rounded-xl border border-border bg-card p-4 shadow-xl">
+        <div class="mb-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600"><i data-lucide="message-square-plus" class="h-4 w-4"></i></div>
+            <div>
+              <p class="text-sm font-semibold">Feedback</p>
+              <p class="text-[11px] text-muted-foreground">Something missing or needs fixing?</p>
+            </div>
+          </div>
+          <button id="feedbackClose" class="text-muted-foreground hover:text-foreground"><i data-lucide="x" class="h-4 w-4"></i></button>
+        </div>
+        <textarea placeholder="Write what you would improve or what is missing…" class="mb-2 min-h-[80px] w-full resize-y rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"></textarea>
+        <button class="flex w-full items-center justify-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#002a85]"><i data-lucide="send" class="h-4 w-4"></i>Send</button>
+      </div>
+
+      <div class="mx-auto max-w-7xl space-y-6 px-8 py-6">
+
+        <!-- MATCH SCORE (top summary) -->
+        <section class="rounded-xl border border-border bg-muted/40 p-5">
+          <div class="mb-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="gauge" class="h-4 w-4 text-muted-foreground"></i>
+              <h2 class="text-sm font-semibold">Match score</h2>
+            </div>
+            <span class="text-xs text-muted-foreground">Updates live as you edit below</span>
+          </div>
+          <div class="flex overflow-hidden rounded-md border border-border" id="scoreBar"></div>
+          <div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+            <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-400"></span>Required — a miss disqualifies the call</span>
+            <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>Preferred — adds weighted points</span>
+          </div>
+        </section>
+
+        <!-- ==================== WHAT THE AI CAPTURES ==================== -->
+        <section data-section="captures" class="overflow-hidden rounded-xl border border-border border-l-[6px] border-l-violet-500 bg-card p-5">
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-10">
+            <!-- LEFT 3/4: form -->
+            <div class="md:col-span-7">
+              <div class="mb-2 flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-600"><i data-lucide="database" class="h-5 w-5"></i></div>
+                <div>
+                  <h2 class="text-sm font-semibold leading-tight">What the AI captures</h2>
+                  <div class="mt-0.5 flex items-center gap-1.5">
+                    <span class="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700">Extraction</span>
+                    <span class="text-[11px] text-muted-foreground">Open-ended → structured value</span>
+                  </div>
+                </div>
+              </div>
+              <p class="mb-4 text-xs text-muted-foreground">Free-form data pulled from every call. Optionally include in the score by giving an ideal.</p>
+
+              <div class="space-y-2" id="fieldsList"></div>
+
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                <button id="addField" class="flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm shadow-sm hover:bg-muted">
+                  <i data-lucide="plus" class="h-4 w-4"></i> Add field
+                </button>
+                <div class="relative">
+                  <button id="commonBtn" class="flex w-full items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm shadow-sm hover:bg-muted">
+                    <i data-lucide="list" class="h-4 w-4"></i> Common fields
+                    <i data-lucide="chevron-down" class="h-4 w-4"></i>
+                  </button>
+                  <div id="commonMenu" class="absolute left-0 right-0 z-20 mt-1 hidden rounded-lg border border-border bg-card p-1 shadow-lg"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: collapsed placeholder / expanded preview -->
+            <div class="md:col-span-3" data-preview="captures">
+              <div class="preview-collapsed flex h-full min-h-[120px] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 p-4 text-center">
+                <div class="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-600"><i data-lucide="table-2" class="h-4 w-4"></i></div>
+                <p class="text-xs font-medium">Preview appears here</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">Add or edit a field and the AI's output for one candidate will render here.</p>
+              </div>
+              <div class="preview-expanded hidden flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4">
+                <div class="flex items-center gap-2">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600"><i data-lucide="table-2" class="h-4 w-4"></i></div>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Output preview</p>
+                </div>
+                <div class="rounded-md border border-border bg-white p-2.5 shadow-sm">
+                  <div class="flex items-center gap-2">
+                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-brand/10 text-[10px] font-semibold text-brand">MK</div>
+                    <p class="text-xs font-medium">Martin K.</p>
+                  </div>
+                  <div class="mt-2 grid grid-cols-2 gap-1 text-[10px]">
+                    <div class="rounded bg-slate-50 px-1.5 py-1"><span class="text-muted-foreground">Skills</span><br><b>React, TS</b></div>
+                    <div class="rounded bg-slate-50 px-1.5 py-1"><span class="text-muted-foreground">Notice</span><br><b>30 d</b></div>
+                    <div class="rounded bg-slate-50 px-1.5 py-1"><span class="text-muted-foreground">Salary</span><br><b>€2 400</b></div>
+                    <div class="rounded bg-slate-50 px-1.5 py-1"><span class="text-muted-foreground">Company</span><br><b>Acme</b></div>
+                  </div>
+                </div>
+                <p class="text-[11px] leading-relaxed text-muted-foreground">
+                  Every call becomes one clean row. Sort, filter, or export across thousands without opening a recording.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== SCORING CRITERIA ==================== -->
+        <section data-section="scoring" class="overflow-hidden rounded-xl border border-border border-l-[6px] border-l-emerald-500 bg-card p-5">
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-10">
+            <!-- LEFT 3/4: form -->
+            <div class="md:col-span-7">
+              <div class="mb-2 flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600"><i data-lucide="sliders-horizontal" class="h-5 w-5"></i></div>
+                <div>
+                  <h2 class="text-sm font-semibold leading-tight">Scoring criteria</h2>
+                  <div class="mt-0.5 flex items-center gap-1.5">
+                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Evaluation</span>
+                    <span class="text-[11px] text-muted-foreground">Answer vs. ideal · weighted average</span>
+                  </div>
+                </div>
+              </div>
+              <p class="mb-5 text-xs text-muted-foreground">Two ways to score: exact-match answers to flow questions, and holistic AI judgement for soft criteria.</p>
+
+              <div class="mb-2 flex items-center gap-2">
+                <p class="text-xs font-medium text-muted-foreground">From your flow questions</p>
+                <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Exact match</span>
+              </div>
+              <div id="questionsList" class="mb-6 space-y-3"></div>
+
+              <div class="mb-2 flex items-center gap-2">
+                <p class="text-xs font-medium text-muted-foreground">Custom criteria — holistic judgements</p>
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">AI judgement</span>
+              </div>
+              <div id="customCriteria" class="space-y-3"></div>
+
+              <button id="addCustom" class="mt-3 flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm shadow-sm hover:bg-muted">
+                <i data-lucide="plus" class="h-4 w-4"></i> Add criterion
+              </button>
+            </div>
+
+            <!-- RIGHT: collapsed placeholder / expanded preview -->
+            <div class="md:col-span-3" data-preview="scoring">
+              <div class="preview-collapsed flex h-full min-h-[120px] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 p-4 text-center">
+                <div class="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600"><i data-lucide="gauge" class="h-4 w-4"></i></div>
+                <p class="text-xs font-medium">Preview appears here</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">Enable a question or add a criterion to see how the score breakdown will look.</p>
+              </div>
+              <div class="preview-expanded hidden flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4">
+                <div class="flex items-center gap-2">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600"><i data-lucide="gauge" class="h-4 w-4"></i></div>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Output preview</p>
+                </div>
+                <div class="rounded-md border border-border bg-white p-3 shadow-sm">
+                  <div class="flex items-center justify-between">
+                    <p class="text-xs font-medium">Martin K.</p>
+                    <span class="text-lg font-bold text-emerald-600">87%</span>
+                  </div>
+                  <div class="mt-2 space-y-1.5 text-[10px]">
+                    <div>
+                      <div class="flex justify-between text-muted-foreground"><span>Skills match</span><span>95%</span></div>
+                      <div class="h-1.5 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-emerald-500" style="width:95%"></div></div>
+                    </div>
+                    <div>
+                      <div class="flex justify-between text-muted-foreground"><span>Fluent answers</span><span>80%</span></div>
+                      <div class="h-1.5 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-emerald-500" style="width:80%"></div></div>
+                    </div>
+                    <div>
+                      <div class="flex justify-between text-muted-foreground"><span>Notice period</span><span>60%</span></div>
+                      <div class="h-1.5 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-amber-500" style="width:60%"></div></div>
+                    </div>
+                  </div>
+                </div>
+                <p class="text-[11px] leading-relaxed text-muted-foreground">
+                  One score per call. Rank thousands of candidates and jump straight to the top.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== OUTCOMES + TAGS ==================== -->
+        <section data-section="outcomes" class="overflow-hidden rounded-xl border border-border border-l-[6px] border-l-sky-500 bg-card p-5">
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-10">
+            <div class="md:col-span-7">
+              <div class="mb-2 flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-100 text-sky-600"><i data-lucide="tag" class="h-5 w-5"></i></div>
+                <div>
+                  <h2 class="text-sm font-semibold leading-tight">Outcomes and labels</h2>
+                  <div class="mt-0.5 flex items-center gap-1.5">
+                    <span class="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">Classification</span>
+                    <span class="text-[11px] text-muted-foreground">Post-call yes/no + free labels · does not affect score</span>
+                  </div>
+                </div>
+              </div>
+              <p class="mb-5 text-xs text-muted-foreground">Optional. How each call gets categorised afterwards.</p>
+
+              <div class="mb-2 flex items-center gap-2">
+                <p class="text-xs font-medium text-muted-foreground">Outcomes — what counts as a successful call</p>
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700">Yes / No</span>
+              </div>
+              <div class="mb-3 space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+                <div class="flex items-center gap-2">
+                  <input value="Did the interview complete successfully?" class="h-9 flex-1 rounded-md border border-border bg-card px-3 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" />
+                  <button class="trash-red flex h-9 w-9 items-center justify-center rounded-md border border-red-300 bg-white"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                </div>
+                <textarea placeholder="Counts as success when... (e.g. the contact agreed to a specific date and time)" class="min-h-[64px] w-full resize-y rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"></textarea>
+              </div>
+              <button class="mb-6 flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm shadow-sm hover:bg-muted">
+                <i data-lucide="plus" class="h-4 w-4"></i> Add outcome
+              </button>
+
+              <div class="mb-2 flex items-center gap-2">
+                <p class="text-xs font-medium text-muted-foreground">Tags — labels the AI may auto-assign</p>
+                <span class="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">Rule-based</span>
+              </div>
+              <div class="mb-3 space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+                <div class="flex items-center gap-2">
+                  <input value="needs_followup" class="h-9 flex-1 rounded-md border border-border bg-card px-3 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" />
+                  <button class="trash-red flex h-9 w-9 items-center justify-center rounded-md border border-red-300 bg-white"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                </div>
+                <input value="When the caller asks to be contacted later" class="h-9 w-full rounded-md border border-border bg-card px-3 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" />
+              </div>
+              <button class="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm shadow-sm hover:bg-muted">
+                <i data-lucide="plus" class="h-4 w-4"></i> Add tag
+              </button>
+            </div>
+
+            <div class="md:col-span-3" data-preview="outcomes">
+              <div class="preview-collapsed flex h-full min-h-[120px] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 p-4 text-center">
+                <div class="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-100 text-sky-600"><i data-lucide="filter" class="h-4 w-4"></i></div>
+                <p class="text-xs font-medium">Preview appears here</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">Add an outcome or tag rule to see how calls will be filtered afterwards.</p>
+              </div>
+              <div class="preview-expanded hidden flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4">
+                <div class="flex items-center gap-2">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-600"><i data-lucide="filter" class="h-4 w-4"></i></div>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Output preview</p>
+                </div>
+                <div class="rounded-md border border-border bg-white p-2.5 shadow-sm">
+                  <p class="mb-1.5 text-[10px] text-muted-foreground">Filter: <b class="text-foreground">Meeting booked</b></p>
+                  <div class="space-y-1">
+                    <div class="flex items-center justify-between rounded bg-slate-50 px-2 py-1 text-[10px]">
+                      <span>Anna S.</span>
+                      <span class="rounded-full bg-emerald-100 px-1.5 text-[9px] font-medium text-emerald-700">success</span>
+                    </div>
+                    <div class="flex items-center justify-between rounded bg-slate-50 px-2 py-1 text-[10px]">
+                      <span>Peter H.</span>
+                      <span class="rounded-full bg-amber-100 px-1.5 text-[9px] font-medium text-amber-700">needs_followup</span>
+                    </div>
+                    <div class="flex items-center justify-between rounded bg-slate-50 px-2 py-1 text-[10px]">
+                      <span>Jana K.</span>
+                      <span class="rounded-full bg-rose-100 px-1.5 text-[9px] font-medium text-rose-700">not_interested</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="text-[11px] leading-relaxed text-muted-foreground">
+                  Turns every call into filterable chips. See who converted, who to chase, and who to leave alone.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== WHAT TO SAVE ==================== -->
+        <section class="overflow-hidden rounded-xl border border-border border-l-[6px] border-l-slate-500 bg-card p-5">
+          <div class="mb-2 flex items-center gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600"><i data-lucide="save" class="h-5 w-5"></i></div>
+            <div>
+              <h2 class="text-sm font-semibold leading-tight">What to save</h2>
+              <div class="mt-0.5 flex items-center gap-1.5">
+                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700">Storage</span>
+                <span class="text-[11px] text-muted-foreground">Choose which artefacts are produced per call</span>
+              </div>
+            </div>
+          </div>
+          <p class="mb-5 text-xs text-muted-foreground">Turn on the artefacts you want the AI to produce for every call. Enabled ones show a preview below.</p>
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-3" id="saveToggles"></div>
+
+          <div class="mt-8">
+            <p class="mb-3 text-xs font-medium text-muted-foreground">What each artefact looks like</p>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3" id="savePreviews"></div>
+          </div>
+        </section>
+
+        <div class="h-8"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const navItems = [
+      { label: "Dashboard", icon: "layout-grid" },
+      { label: "Interviews", icon: "message-square" },
+      { label: "Job positions", icon: "briefcase" },
+      { label: "Candidates", icon: "clipboard-list" },
+      { label: "Talent Sourcing", icon: "search" },
+      { label: "Agents", icon: "bot", active: true },
+    ];
+    const bottomNav = [
+      { label: "Billing & usage", icon: "credit-card" },
+      { label: "Settings", icon: "settings" },
+      { label: "Support", icon: "help-circle" },
+    ];
+    document.getElementById("mainNav").innerHTML = navItems.map(i => {
+      const cls = `flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${i.active ? "bg-brand/15 text-brand" : "text-foreground hover:bg-muted"}`;
+      return `<button class="${cls}"><i data-lucide="${i.icon}" class="h-4 w-4"></i>${i.label}</button>`;
+    }).join("");
+    document.getElementById("bottomNav").innerHTML = bottomNav.map(i => `
+      <button class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+        <i data-lucide="${i.icon}" class="h-4 w-4"></i>${i.label}
+      </button>`).join("");
+
+    // Try agent / feedback popovers
+    const tryPop = document.getElementById("tryAgentPop");
+    const fbPop = document.getElementById("feedbackPop");
+    document.getElementById("tryAgentBtn").addEventListener("click", () => { fbPop.classList.add("hidden"); tryPop.classList.toggle("hidden"); });
+    document.getElementById("tryAgentClose").addEventListener("click", () => tryPop.classList.add("hidden"));
+    document.getElementById("feedbackBtn").addEventListener("click", () => { tryPop.classList.add("hidden"); fbPop.classList.toggle("hidden"); });
+    document.getElementById("feedbackClose").addEventListener("click", () => fbPop.classList.add("hidden"));
+
+    // Section preview: collapsed until user interacts with the form
+    const sectionStarted = { captures: false, scoring: false, outcomes: false };
+    function markSectionStarted(name) {
+      if (!name || sectionStarted[name]) return;
+      sectionStarted[name] = true;
+      const el = document.querySelector(`[data-preview="${name}"]`);
+      if (!el) return;
+      el.querySelector(".preview-collapsed").classList.add("hidden");
+      el.querySelector(".preview-expanded").classList.remove("hidden");
+    }
+    document.addEventListener("input", (e) => {
+      const sec = e.target.closest("[data-section]");
+      if (sec && !e.target.closest("[data-preview]")) markSectionStarted(sec.dataset.section);
+    }, true);
+    document.addEventListener("change", (e) => {
+      const sec = e.target.closest("[data-section]");
+      if (sec && !e.target.closest("[data-preview]")) markSectionStarted(sec.dataset.section);
+    }, true);
+    document.addEventListener("click", (e) => {
+      const sec = e.target.closest("[data-section]");
+      if (!sec) return;
+      if (e.target.closest("[data-preview]")) return;
+      const trigger = e.target.closest("button, .switch, .seg, [data-common]");
+      if (trigger) markSectionStarted(sec.dataset.section);
+    }, true);
+
+    // Sidebar collapse
+    const sidebar = document.getElementById("sidebar");
+    const openBtn = document.getElementById("sidebarOpen");
+    document.getElementById("sidebarToggle").addEventListener("click", () => {
+      sidebar.classList.add("hidden");
+      openBtn.classList.remove("hidden");
+      openBtn.classList.add("flex");
+    });
+    openBtn.addEventListener("click", () => {
+      sidebar.classList.remove("hidden");
+      openBtn.classList.add("hidden");
+      openBtn.classList.remove("flex");
+    });
+
+    // ---------- State ----------
+    let nid = 100;
+    const uid = () => "x" + (++nid);
+    const state = {
+      fields: [
+        { id: uid(), label: "Full name", type: "Text", scored: false },
+        { id: uid(), label: "Salary expectation", type: "Number", scored: true, ideal: "≤ 2500 €", weight: 1 },
+      ],
+      questions: [
+        { id: uid(), text: "Are you interested?", ideal: "Yes", enabled: true, mode: "preferred", weight: 2, editing: false },
+      ],
+      custom: [
+        { id: uid(), title: "Answered well and fluently", desc: "Candidate speaks confidently and without hesitation", mode: "preferred", weight: 3, editing: false },
+      ],
+    };
+    const commonFields = ["Email", "Phone", "Company", "Years of experience", "Notice period", "Location", "LinkedIn URL"];
+
+    // ---------- Fields ----------
+    function renderFields() {
+      const el = document.getElementById("fieldsList");
+      el.innerHTML = state.fields.map(f => `
+        <div class="rounded-lg border border-border bg-card">
+          <div class="flex items-center gap-2 px-3 py-2">
+            <i data-lucide="grip-vertical" class="h-4 w-4 text-muted-foreground/50"></i>
+            <input value="${f.label}" data-k="fLabel" data-id="${f.id}" class="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none" />
+            <select data-k="fType" data-id="${f.id}" class="h-7 rounded-md border border-border bg-card px-2 text-xs text-muted-foreground outline-none">
+              ${["Text","Number","List","Boolean","Date"].map(t => `<option ${f.type===t?"selected":""}>${t}</option>`).join("")}
+            </select>
+            <div class="flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs">
+              <span class="text-muted-foreground">Score</span>
+              <label class="switch"><input type="checkbox" data-k="fScored" data-id="${f.id}" ${f.scored?"checked":""}><span class="slider"></span></label>
+            </div>
+            <button data-remove="field" data-id="${f.id}" class="trash-red flex h-7 w-7 items-center justify-center rounded-md border border-red-300 bg-white"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+          </div>
+          ${f.scored ? `
+          <div class="flex flex-wrap items-center gap-2 border-t border-border bg-muted/30 px-3 py-2 text-xs">
+            <span class="text-muted-foreground">Ideal</span>
+            <input value="${f.ideal||""}" data-k="fIdeal" data-id="${f.id}" placeholder="e.g. React, TypeScript" class="h-7 flex-1 min-w-[160px] rounded-md border border-border bg-card px-2 outline-none focus:border-brand" />
+            <span class="text-muted-foreground">Weight</span>
+            <input type="number" min="1" value="${f.weight||1}" data-k="fWeight" data-id="${f.id}" class="h-7 w-14 rounded-md border border-border bg-card px-2 outline-none focus:border-brand" />
+            <span class="text-muted-foreground" data-share="f:${f.id}">—%</span>
+          </div>`:""}
+        </div>`).join("");
+      lucide.createIcons();
+    }
+
+    // ---------- Questions ----------
+    function renderQuestions() {
+      const el = document.getElementById("questionsList");
+      el.innerHTML = state.questions.map(q => `
+        <div class="rounded-lg border border-border bg-muted/30 p-3">
+          <div class="flex items-center gap-3">
+            <label class="switch"><input type="checkbox" data-k="qEnabled" data-id="${q.id}" ${q.enabled?"checked":""}><span class="slider"></span></label>
+            <p class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Question</p>
+            <span class="ml-auto flex items-center gap-1.5">
+              ${q.editing
+                ? `<button data-done="q" data-id="${q.id}" class="rounded-md bg-brand px-3 py-1 text-xs font-medium text-white shadow-sm hover:bg-[#002a85]">Done</button>`
+                : `<button data-edit="q" data-id="${q.id}" class="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-white text-muted-foreground hover:text-brand"><i data-lucide="pencil" class="h-3.5 w-3.5"></i></button>`}
+              <button data-remove="question" data-id="${q.id}" class="trash-red flex h-8 w-8 items-center justify-center rounded-md border border-red-300 bg-white"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i></button>
+            </span>
+          </div>
+          <div class="mt-2 pl-11 space-y-2">
+            ${q.editing
+              ? `<input value="${q.text}" data-k="qText" data-id="${q.id}" class="h-9 w-full rounded-md border border-border bg-card px-3 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" />`
+              : `<p class="text-sm font-medium">${q.text}</p>`}
+            <p class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Ideal answer</p>
+            ${q.editing
+              ? `<input value="${q.ideal||""}" data-k="qIdeal" data-id="${q.id}" class="h-9 w-full rounded-md border border-border bg-card px-3 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" />`
+              : `<p class="text-sm">${q.ideal||'<span class="text-muted-foreground">not set</span>'}</p>`}
+            <div class="flex flex-wrap items-center gap-3 pt-1">
+              <div class="seg" data-seg data-scope="q" data-id="${q.id}">
+                <button data-val="required" class="${q.mode==='required'?'active':''}">Required</button>
+                <button data-val="preferred" class="${q.mode==='preferred'?'active':''}">Preferred</button>
+              </div>
+              <span class="text-xs text-muted-foreground">Weight</span>
+              <input type="number" min="1" value="${q.weight}" data-k="qWeight" data-id="${q.id}" class="h-8 w-16 rounded-md border border-border bg-card px-2 text-sm outline-none focus:border-brand" />
+              <span class="text-xs text-muted-foreground" data-share="q:${q.id}">—%</span>
+            </div>
+          </div>
+        </div>`).join("");
+      lucide.createIcons();
+    }
+
+    // ---------- Custom criteria ----------
+    function renderCustom() {
+      const el = document.getElementById("customCriteria");
+      el.innerHTML = state.custom.map(c => `
+        <div class="rounded-lg border border-border bg-muted/30 p-3">
+          <div class="flex items-center gap-2">
+            <p class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Question / criterion</p>
+            <span class="ml-auto flex items-center gap-1.5">
+              ${c.editing
+                ? `<button data-done="custom" data-id="${c.id}" class="rounded-md bg-brand px-3 py-1 text-xs font-medium text-white shadow-sm hover:bg-[#002a85]">Done</button>`
+                : `<button data-edit="custom" data-id="${c.id}" class="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-white text-muted-foreground hover:text-brand"><i data-lucide="pencil" class="h-3.5 w-3.5"></i></button>`}
+              <button data-remove="custom" data-id="${c.id}" class="trash-red flex h-8 w-8 items-center justify-center rounded-md border border-red-300 bg-white"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i></button>
+            </span>
+          </div>
+          <div class="mt-2 space-y-2">
+            ${c.editing
+              ? `<input value="${c.title}" data-k="cTitle" data-id="${c.id}" class="h-9 w-full rounded-md border border-border bg-card px-3 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" />`
+              : `<p class="text-sm font-medium">${c.title}</p>`}
+            <p class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Ideal answer (description)</p>
+            ${c.editing
+              ? `<textarea data-k="cDesc" data-id="${c.id}" class="min-h-[56px] w-full resize-y rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">${c.desc}</textarea>`
+              : `<p class="text-sm">${c.desc||'<span class="text-muted-foreground">not set</span>'}</p>`}
+            <div class="flex flex-wrap items-center gap-3 pt-1">
+              <div class="seg" data-seg data-scope="custom" data-id="${c.id}">
+                <button data-val="required" class="${c.mode==='required'?'active':''}">Required</button>
+                <button data-val="preferred" class="${c.mode==='preferred'?'active':''}">Preferred</button>
+              </div>
+              <span class="text-xs text-muted-foreground">Weight</span>
+              <input type="number" min="1" value="${c.weight}" data-k="cWeight" data-id="${c.id}" class="h-8 w-16 rounded-md border border-border bg-card px-2 text-sm outline-none focus:border-brand" />
+              <span class="text-xs text-muted-foreground" data-share="c:${c.id}">—%</span>
+            </div>
+          </div>
+        </div>`).join("");
+      lucide.createIcons();
+    }
+
+    // ---------- Save toggles ----------
+    const saveToggles = [
+      {
+        key: "recording", label: "Call recording", on: true,
+        desc: "Store the raw stereo audio recording of the conversation.",
+        icon: "mic", accent: "sky",
+        preview: {
+          title: "Recording",
+          body: "Play back the full conversation whenever you need to verify what was said. Ideal for QA, disputes, or spot-checking the AI's transcription accuracy.",
+          inputs: ["phone-call", "user", "user-round"], output: "audio-lines",
+        },
+      },
+      {
+        key: "transcript", label: "Transcript", on: true,
+        desc: "Generate and save the full timestamped text transcription.",
+        icon: "file-text", accent: "violet",
+        preview: {
+          title: "Transcript",
+          body: "Every word, timestamped and searchable across calls. Jump to any moment in seconds and quote back the caller's exact words.",
+          inputs: ["mic", "clock", "search"], output: "file-text",
+        },
+      },
+      {
+        key: "summary", label: "Summary", on: true,
+        desc: "Generate a structured, paragraph-based call summary.",
+        icon: "align-left", accent: "emerald",
+        preview: {
+          title: "Summary",
+          body: "Identify and organize the strengths and weaknesses, and extract the most important points from the call according to your configured settings.",
+          inputs: ["headphones", "list-x", "file-check-2"], output: "align-left",
+        },
+      },
+      {
+        key: "qa", label: "Extracted Q&A", on: true,
+        desc: "Extract structured answers to key candidate or lead questions.",
+        icon: "list-checks", accent: "amber",
+        preview: {
+          title: "Q&A",
+          body: "Every question you defined, paired with the caller's answer. Ready to filter, export, or push straight into your ATS or CRM.",
+          inputs: ["message-circle-question", "message-circle-more", "message-circle-reply"], output: "list-checks",
+        },
+      },
+      {
+        key: "eval", label: "Evaluation", on: true,
+        desc: "Compute the match score, strengths, weaknesses, and objections.",
+        icon: "gauge", accent: "rose",
+        preview: {
+          title: "Evaluation",
+          body: "The final weighted match score with strengths, weaknesses, and objections the AI detected across the whole call.",
+          inputs: ["sliders-horizontal", "target", "trending-up"], output: "gauge",
+        },
+      },
+      {
+        key: "sentiment", label: "Sentiment analysis", on: true,
+        desc: "Track caller mood and tone progression throughout the call.",
+        icon: "line-chart", accent: "pink",
+        preview: {
+          title: "Sentiment",
+          body: "See how the caller's mood shifted through the conversation. Useful for spotting friction, hesitation, or enthusiasm at scale.",
+          inputs: ["smile", "meh", "frown"], output: "line-chart",
+        },
+      },
+    ];
+
+    const accentMap = {
+      sky: { text: "text-sky-600", bg: "bg-sky-100", ring: "ring-sky-200", stroke: "#0ea5e9" },
+      violet: { text: "text-violet-600", bg: "bg-violet-100", ring: "ring-violet-200", stroke: "#8b5cf6" },
+      emerald: { text: "text-emerald-600", bg: "bg-emerald-100", ring: "ring-emerald-200", stroke: "#10b981" },
+      amber: { text: "text-amber-600", bg: "bg-amber-100", ring: "ring-amber-200", stroke: "#f59e0b" },
+      rose: { text: "text-rose-600", bg: "bg-rose-100", ring: "ring-rose-200", stroke: "#f43f5e" },
+      pink: { text: "text-pink-600", bg: "bg-pink-100", ring: "ring-pink-200", stroke: "#ec4899" },
+    };
+
+    function renderSave() {
+      document.getElementById("saveToggles").innerHTML = saveToggles.map(t => {
+        const a = accentMap[t.accent];
+        const on = t.on;
+        return `
+        <label class="flex cursor-pointer items-start justify-between gap-4 rounded-lg border p-3 transition ${on ? `border-transparent ring-2 ${a.ring} bg-white shadow-sm` : "border-border bg-white/40 hover:bg-white"}">
+          <div class="flex items-start gap-3">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${on ? a.bg : "bg-muted"} ${on ? a.text : "text-muted-foreground"}"><i data-lucide="${t.icon}" class="h-4 w-4"></i></div>
+            <div>
+              <p class="text-sm font-medium">${t.label}</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">${t.desc}</p>
+            </div>
+          </div>
+          <span class="switch mt-1"><input type="checkbox" data-save-key="${t.key}" ${on?"checked":""}><span class="slider"></span></span>
+        </label>`;
+      }).join("");
+
+      const enabled = saveToggles.filter(t => t.on);
+      const previewEl = document.getElementById("savePreviews");
+      if (!enabled.length) {
+        previewEl.innerHTML = `<div class="col-span-full rounded-lg border border-dashed border-border p-6 text-center text-xs text-muted-foreground">Nothing enabled yet. Turn on an artefact above to see a preview.</div>`;
+      } else {
+        previewEl.innerHTML = enabled.map(t => {
+          const a = accentMap[t.accent];
+          const p = t.preview;
+          const inputIcons = p.inputs.map((ic, i) => {
+            const y = 20 + i * 40; // spacing
+            return `
+              <g>
+                <path d="M 44 ${y} C 90 ${y}, 100 60, 140 60" stroke="#94a3b8" stroke-width="1" fill="none" opacity="0.5"/>
+                <foreignObject x="8" y="${y-14}" width="30" height="30">
+                  <div xmlns="http://www.w3.org/1999/xhtml" class="flex h-[28px] w-[28px] items-center justify-center text-slate-700"><i data-lucide="${ic}" class="h-5 w-5"></i></div>
+                </foreignObject>
+              </g>`;
+          }).join("");
+          return `
+            <div class="overflow-hidden rounded-xl border border-border bg-white shadow-sm">
+              <div class="flex items-center justify-center bg-slate-50 p-4">
+                <svg viewBox="0 0 180 120" width="180" height="120">
+                  ${inputIcons}
+                  <foreignObject x="130" y="40" width="44" height="44">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="flex h-[40px] w-[40px] items-center justify-center rounded-lg ${a.bg} ${a.text}"><i data-lucide="${p.output}" class="h-5 w-5"></i></div>
+                  </foreignObject>
+                </svg>
+              </div>
+              <div class="border-t border-border p-4">
+                <p class="text-sm font-semibold">${p.title}</p>
+                <p class="mt-1 text-xs leading-relaxed text-muted-foreground">${p.body}</p>
+                <div class="mt-3 flex items-center justify-end gap-2">
+                  <button class="rounded-md border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm hover:bg-muted">Dismiss</button>
+                  <button class="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-600">Learn more</button>
+                </div>
+              </div>
+            </div>`;
+        }).join("");
+      }
+      lucide.createIcons();
+    }
+
+    document.addEventListener("change", (e) => {
+      const t = e.target;
+      if (t.dataset.saveKey) {
+        const s = saveToggles.find(x => x.key === t.dataset.saveKey);
+        if (s) { s.on = t.checked; renderSave(); }
+      }
+    });
+
+    // ---------- Common fields dropdown ----------
+    const commonMenu = document.getElementById("commonMenu");
+    commonMenu.innerHTML = commonFields.map(cf => `<button data-common="${cf}" class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"><i data-lucide="plus" class="h-3.5 w-3.5"></i>${cf}</button>`).join("");
+    document.getElementById("commonBtn").addEventListener("click", () => commonMenu.classList.toggle("hidden"));
+    document.addEventListener("click", e => { if (!e.target.closest("#commonBtn") && !e.target.closest("#commonMenu")) commonMenu.classList.add("hidden"); });
+
+    // ---------- Score bar ----------
+    function shorten(s, n=14) { return s.length > n ? s.slice(0, n-1) + "…" : s; }
+    function recomputeScore() {
+      const items = [];
+      state.fields.forEach(f => f.scored && items.push({ label: f.label, weight: +f.weight||1, mode: "required", key: "f:"+f.id }));
+      state.questions.forEach(q => q.enabled && items.push({ label: q.text, weight: +q.weight||1, mode: q.mode, key: "q:"+q.id }));
+      state.custom.forEach(c => items.push({ label: c.title||"Untitled", weight: +c.weight||1, mode: c.mode, key: "c:"+c.id }));
+
+      const total = items.reduce((s,i)=>s+i.weight,0) || 1;
+      const palette = { required: ["#fbbf24","#f59e0b"], preferred: ["#34d399","#10b981"] };
+      let ri = 0, pi = 0;
+      document.getElementById("scoreBar").innerHTML = items.length
+        ? items.map(i => {
+            const pct = Math.round((i.weight/total)*100);
+            const c = i.mode==="required" ? palette.required[ri++%2] : palette.preferred[pi++%2];
+            return `<div class="score-seg" style="width:${pct}%;background:${c}">${shorten(i.label)} ${pct}%</div>`;
+          }).join("")
+        : `<div class="flex h-8 w-full items-center justify-center bg-muted text-xs text-muted-foreground">Nothing scored yet</div>`;
+
+      document.querySelectorAll("[data-share]").forEach(el => {
+        const key = el.getAttribute("data-share");
+        const it = items.find(x => x.key === key);
+        el.textContent = it ? `${Math.round((it.weight/total)*100)}% of score` : "not scored";
+      });
+    }
+
+    // ---------- Events ----------
+    document.addEventListener("click", (e) => {
+      const seg = e.target.closest(".seg button");
+      if (seg) {
+        const parent = seg.parentElement;
+        parent.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+        seg.classList.add("active");
+        const scope = parent.dataset.scope, id = parent.dataset.id, val = seg.dataset.val;
+        if (scope === "q") { const q = state.questions.find(x=>x.id===id); if (q) q.mode = val; }
+        if (scope === "custom") { const c = state.custom.find(x=>x.id===id); if (c) c.mode = val; }
+        recomputeScore();
+        return;
+      }
+      const rm = e.target.closest("[data-remove]");
+      if (rm) {
+        const kind = rm.dataset.remove, id = rm.dataset.id;
+        if (kind === "field") { state.fields = state.fields.filter(x=>x.id!==id); renderFields(); }
+        if (kind === "question") { state.questions = state.questions.filter(x=>x.id!==id); renderQuestions(); }
+        if (kind === "custom") { state.custom = state.custom.filter(x=>x.id!==id); renderCustom(); }
+        recomputeScore();
+        return;
+      }
+      const ed = e.target.closest("[data-edit]");
+      if (ed) {
+        const kind = ed.dataset.edit, id = ed.dataset.id;
+        if (kind === "q") { const q = state.questions.find(x=>x.id===id); if (q) q.editing = true; renderQuestions(); }
+        if (kind === "custom") { const c = state.custom.find(x=>x.id===id); if (c) c.editing = true; renderCustom(); }
+        recomputeScore();
+        return;
+      }
+      const dn = e.target.closest("[data-done]");
+      if (dn) {
+        const kind = dn.dataset.done, id = dn.dataset.id;
+        if (kind === "q") { const q = state.questions.find(x=>x.id===id); if (q) q.editing = false; renderQuestions(); }
+        if (kind === "custom") { const c = state.custom.find(x=>x.id===id); if (c) c.editing = false; renderCustom(); }
+        recomputeScore();
+        return;
+      }
+      if (e.target.closest("#addField")) {
+        state.fields.push({ id: uid(), label: "New field", type: "Text", scored: false });
+        renderFields(); recomputeScore(); return;
+      }
+      if (e.target.closest("#addCustom")) {
+        state.custom.push({ id: uid(), title: "New criterion", desc: "", mode: "preferred", weight: 1, editing: true });
+        renderCustom(); recomputeScore(); return;
+      }
+      const cf = e.target.closest("[data-common]");
+      if (cf) {
+        state.fields.push({ id: uid(), label: cf.dataset.common, type: "Text", scored: false });
+        renderFields(); recomputeScore();
+        commonMenu.classList.add("hidden");
+      }
+    });
+
+    document.addEventListener("input", (e) => {
+      const t = e.target, id = t.dataset.id, k = t.dataset.k;
+      if (!id || !k) return;
+      const F = (a) => a.find(x => x.id === id);
+      switch (k) {
+        case "fLabel": { const x = F(state.fields); if (x) x.label = t.value; break; }
+        case "fType": { const x = F(state.fields); if (x) x.type = t.value; break; }
+        case "fIdeal": { const x = F(state.fields); if (x) x.ideal = t.value; break; }
+        case "fWeight": { const x = F(state.fields); if (x) x.weight = t.value; break; }
+        case "qText": { const x = F(state.questions); if (x) x.text = t.value; break; }
+        case "qIdeal": { const x = F(state.questions); if (x) x.ideal = t.value; break; }
+        case "qWeight": { const x = F(state.questions); if (x) x.weight = t.value; break; }
+        case "cTitle": { const x = F(state.custom); if (x) x.title = t.value; break; }
+        case "cDesc": { const x = F(state.custom); if (x) x.desc = t.value; break; }
+        case "cWeight": { const x = F(state.custom); if (x) x.weight = t.value; break; }
+      }
+      recomputeScore();
+    });
+
+    document.addEventListener("change", (e) => {
+      const t = e.target, id = t.dataset.id, k = t.dataset.k;
+      if (!id || !k) return;
+      if (k === "fScored") { const x = state.fields.find(f=>f.id===id); if (x) { x.scored = t.checked; if (x.scored && !x.weight) x.weight = 1; renderFields(); recomputeScore(); } }
+      if (k === "qEnabled") { const x = state.questions.find(q=>q.id===id); if (x) { x.enabled = t.checked; renderQuestions(); recomputeScore(); } }
+    });
+
+    renderFields(); renderQuestions(); renderCustom(); renderSave(); recomputeScore();
+    lucide.createIcons();
+  </script>
+</body>
+</html>

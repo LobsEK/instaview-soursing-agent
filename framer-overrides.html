@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Framer Overrides – Web</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/framer-motion@11/dist/framer-motion.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      background: #111;
+      font-family: sans-serif;
+    }
+    .label {
+      color: #888;
+      font-size: 13px;
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .demo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .box {
+      width: 120px;
+      height: 120px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { forwardRef, useRef, useState, useCallback } = React;
+    const { motion, useAnimation } = window.Motion;
+
+    // ─── Shared store (replaces framer/store) ────────────────────────────────
+    function createStore(initial) {
+      let state = { ...initial };
+      const listeners = new Set();
+      const setStore = (partial) => {
+        state = { ...state, ...partial };
+        listeners.forEach(fn => fn(state));
+      };
+      const useStore = () => {
+        const [s, setS] = useState(state);
+        React.useEffect(() => {
+          listeners.add(setS);
+          return () => listeners.delete(setS);
+        }, []);
+        return [s, setStore];
+      };
+      return useStore;
+    }
+
+    // ─── randomColor (replaces framer/utils) ─────────────────────────────────
+    function randomColor() {
+      const h = Math.floor(Math.random() * 360);
+      return `hsl(${h}, 70%, 55%)`;
+    }
+
+    // ─── Store instance ───────────────────────────────────────────────────────
+    const useStore = createStore({ background: "#0099FF" });
+
+    // ─── withRotate ───────────────────────────────────────────────────────────
+    function withRotate(Component) {
+      return forwardRef((props, ref) => (
+        <Component
+          ref={ref}
+          {...props}
+          animate={{ rotate: 90 }}
+          transition={{ duration: 2 }}
+        />
+      ));
+    }
+
+    // ─── withHover ────────────────────────────────────────────────────────────
+    function withHover(Component) {
+      return forwardRef((props, ref) => (
+        <Component ref={ref} {...props} whileHover={{ scale: 1.05 }} />
+      ));
+    }
+
+    // ─── withRandomColor ──────────────────────────────────────────────────────
+    function withRandomColor(Component) {
+      return forwardRef((props, ref) => {
+        const [store, setStore] = useStore();
+        return (
+          <Component
+            ref={ref}
+            {...props}
+            animate={{ background: store.background }}
+            onClick={() => setStore({ background: randomColor() })}
+          />
+        );
+      });
+    }
+
+    // ─── Base component ───────────────────────────────────────────────────────
+    const Box = forwardRef(({ children, style, ...rest }, ref) => (
+      <motion.div
+        ref={ref}
+        className="box"
+        style={{ background: "#0099FF", ...style }}
+        {...rest}
+      >
+        {children}
+      </motion.div>
+    ));
+
+    // ─── Apply overrides ──────────────────────────────────────────────────────
+    const RotatingBox    = withRotate(Box);
+    const HoverBox       = withHover(Box);
+    const RandomColorBox = withRandomColor(Box);
+
+    // ─── App ──────────────────────────────────────────────────────────────────
+    function App() {
+      return (
+        <>
+          <div className="demo">
+            <p className="label">withRotate – animuje na 90°</p>
+            <RotatingBox>Rotate</RotatingBox>
+          </div>
+
+          <div className="demo">
+            <p className="label">withHover – scale 1.05 pri hover</p>
+            <HoverBox style={{ background: "#FF6B35" }}>Hover me</HoverBox>
+          </div>
+
+          <div className="demo">
+            <p className="label">withRandomColor – klikni pre zmenu farby</p>
+            <RandomColorBox>Click me</RandomColorBox>
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

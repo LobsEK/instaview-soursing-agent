@@ -1,0 +1,11 @@
+.DS_Store
+.claude/
+cv-lubos.png
+*.local.json
+
+# Veľké / embedded projekty — nepublikovať
+autohtml-project/
+InstaView/
+Minecraft
+ai-watch/
+hr-lovable/

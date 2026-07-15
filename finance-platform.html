@@ -1,0 +1,2528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InstaView – AI Agents</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+      background: #fff;
+      color: #0f172a;
+      overflow-x: hidden;
+    }
+
+    /* ─── NAVBAR ────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 60px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      text-decoration: none;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+      height: 60px;
+      align-items: center;
+    }
+    .nav-links > li {
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: rgba(255,255,255,0.65);
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: #fff; }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .flag-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      flex-shrink: 0;
+      background: none;
+    }
+    .nav-cta {
+      background: transparent;
+      color: #fff;
+      border: 1.5px solid rgba(255,255,255,0.35);
+      padding: 8px 18px;
+      border-radius: 100px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: border-color .15s;
+    }
+    .nav-cta:hover { border-color: #fff; }
+
+    /* ─── MEGA DROPDOWN ─────────────────────────────────────── */
+    .has-dropdown:hover .mega-dropdown { display: flex; }
+
+    .mega-dropdown {
+      display: none;
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.12);
+      z-index: 300;
+      overflow: hidden;
+    }
+    .dd-sidebar {
+      width: 190px;
+      background: #f8fafc;
+      border-right: 1px solid #f1f5f9;
+      padding: 8px 0 20px;
+      flex-shrink: 0;
+    }
+    .dd-sidebar-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #94a3b8;
+      padding: 0 18px 10px;
+    }
+    .dd-cat {
+      padding: 11px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: background .1s, color .1s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dd-cat.active { background: #fff; color: #0f172a; border-right: 2px solid #0f172a; }
+    .dd-cat:hover:not(.active) { background: #f1f5f9; color: #0f172a; }
+    .dd-cat-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #e2e8f0; flex-shrink: 0;
+    }
+    .dd-cat.active .dd-cat-dot { background: #0f172a; }
+    .dd-cat-soon {
+      font-size: 10px;
+      font-weight: 600;
+      color: #cbd5e1;
+      background: #f1f5f9;
+      border: 1px solid #e8edf2;
+      border-radius: 100px;
+      padding: 1px 6px;
+      letter-spacing: .02em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .dd-cat-disabled {
+      color: #94a3b8 !important;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .dd-content { flex: 1; padding: 28px 24px; display: none; }
+    .dd-content.active { display: flex; gap: 32px; align-items: flex-start; }
+    .dd-col { }
+    .dd-col-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #6366f1;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .dd-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background .1s;
+      text-decoration: none;
+      margin-bottom: 2px;
+    }
+    .dd-item:hover { background: #f8fafc; }
+    .dd-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+      letter-spacing: -.3px;
+    }
+    .dd-item-title { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+    .dd-item-desc { font-size: 11.5px; color: #64748b; line-height: 1.45; }
+
+    /* ─── SHARED SECTION STYLES ─────────────────────────────── */
+    .section {
+      padding: 100px 48px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .section-center { text-align: center; }
+
+    .section-bg {
+      background: #f5f5f5;
+      max-width: 100%;
+      padding: 72px 48px;
+    }
+    .section-bg .section-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    h2.big {
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      color: #0f172a;
+    }
+    p.lead {
+      font-size: 17px;
+      color: #475569;
+      line-height: 1.7;
+      margin-top: 16px;
+    }
+
+    /* CTA buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      border: 1.5px solid #d1d5db;
+      background: #fff;
+      color: #0f172a;
+      transition: background .15s, border-color .15s;
+    }
+    .btn:hover { background: #f9fafb; border-color: #9ca3af; }
+
+    .btn-dark {
+      background: #0f172a;
+      color: #fff;
+      border-color: #0f172a;
+    }
+    .btn-dark:hover { background: #1e293b; border-color: #1e293b; }
+
+    /* ─── HERO ──────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      background: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 48px 80px;
+    }
+    .hero h1 {
+      font-size: 64px;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -2px;
+      color: #0f172a;
+      max-width: 820px;
+    }
+    .hero p {
+      font-size: 18px;
+      color: #475569;
+      line-height: 1.7;
+      max-width: 620px;
+      margin: 20px auto 0;
+    }
+    .hero-btns {
+      display: flex;
+      gap: 12px;
+      margin-top: 40px;
+      justify-content: center;
+    }
+
+    /* ─── WHAT CAN YOU DO ───────────────────────────────────── */
+    .wcy-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 52px;
+    }
+    .wcy-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .wcy-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .wcy-card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.3;
+    }
+    .wcy-card p {
+      font-size: 13.5px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+    .wcy-card-dark {
+      background: #161616;
+      border-color: #1e293b;
+    }
+    .wcy-card-dark h3 { color: #f1f5f9; }
+    .wcy-card-dark p { color: #64748b; }
+    .wcy-icon-dark {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+    }
+
+    /* ─── BENTO GRID ────────────────────────────────────────── */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .bento-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 24px 22px;
+    }
+    .bento-large {
+      grid-column: span 1;
+      grid-row: span 2;
+    }
+    .bento-dark {
+      background: #0f172a;
+      border-color: #1e293b;
+    }
+    .bento-wide {
+      grid-column: span 2;
+    }
+    .bento-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+    .bento-desc {
+      font-size: 13.5px;
+      color: #64748b;
+      line-height: 1.65;
+    }
+    .bento-tag {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #94a3b8;
+      background: #1e293b;
+      border-radius: 100px;
+      padding: 4px 12px;
+    }
+    .usecase-pill {
+      font-size: 13px;
+      font-weight: 500;
+      color: #475569;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 100px;
+      padding: 6px 16px;
+    }
+    .wcy-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 48px;
+      background: #0f172a;
+      border-radius: 20px;
+      padding: 36px 48px;
+      gap: 32px;
+    }
+    .wcy-bottom-text h3 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .wcy-bottom-text p {
+      font-size: 15px;
+      color: #94a3b8;
+    }
+    .wcy-bottom-btns {
+      display: flex;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .btn-white {
+      background: #fff;
+      color: #0f172a;
+      border: none;
+      border-radius: 100px;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .btn-outline-white {
+      background: transparent;
+      color: #fff;
+      border: 1.5px solid #ffffff40;
+      border-radius: 100px;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .btn-outline-white:hover { border-color: #fff; }
+
+    /* ─── CALENDLY CTA SECTION ──────────────────────────────── */
+    .cta-section {
+      background: #f8fafc;
+      padding: 100px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .cta-section .cta-tag {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+    .cta-section h2 {
+      font-size: 44px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      max-width: 640px;
+      margin-bottom: 16px;
+    }
+    .cta-section .cta-sub {
+      font-size: 17px;
+      color: #64748b;
+      max-width: 520px;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+    .cta-btns {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 64px;
+    }
+    .btn-dark {
+      background: #0f172a;
+      color: #fff;
+      border: none;
+      border-radius: 100px;
+      padding: 14px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-dark:hover { background: #1e293b; }
+    .btn-light {
+      background: #fff;
+      color: #0f172a;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 100px;
+      padding: 14px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-light:hover { border-color: #94a3b8; }
+    .calendly-wrap {
+      width: 100%;
+      max-width: 1000px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.08);
+      border: 1px solid #e2e8f0;
+    }
+
+    /* ─── WHO IS IT FOR ─────────────────────────────────────── */
+    .for-list {
+      margin-top: 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-top: 1px solid #e2e8f0;
+    }
+    .for-item {
+      display: grid;
+      grid-template-columns: 200px 1fr auto;
+      align-items: center;
+      gap: 32px;
+      padding: 28px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .for-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .for-desc {
+      font-size: 14.5px;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    /* ─── BLOGS ─────────────────────────────────────────────── */
+    .blog-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .blog-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .blog-thumb {
+      height: 160px;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    .blog-body { padding: 20px; }
+    .blog-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+    .blog-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .blog-desc {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.55;
+    }
+
+    /* ─── FOOTER ────────────────────────────────────────────── */
+    footer {
+      background: #0a0a0a;
+      padding: 60px 48px 40px;
+    }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 180px 220px repeat(4, 1fr);
+      gap: 40px;
+      padding-bottom: 48px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .footer-newsletter {
+      background: #161616;
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .footer-newsletter p {
+      font-size: 12.5px;
+      color: #64748b;
+      line-height: 1.55;
+      margin-top: 8px;
+      margin-bottom: 14px;
+    }
+    .newsletter-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .newsletter-form input {
+      background: #0a0a0a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #fff;
+      outline: none;
+      width: 100%;
+      font-family: inherit;
+    }
+    .newsletter-form input::placeholder { color: #475569; }
+    .newsletter-form input:focus { border-color: #334155; }
+    .newsletter-form button {
+      background: #fff;
+      color: #0a0a0a;
+      border: none;
+      border-radius: 100px;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .newsletter-form button:hover { background: #e2e8f0; }
+    .footer-brand { display: flex; flex-direction: column; gap: 12px; }
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      text-decoration: none;
+    }
+    .footer-tagline { font-size: 13px; color: #475569; line-height: 1.6; }
+
+    .footer-col-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .footer-links a {
+      color: #64748b;
+      text-decoration: none;
+      font-size: 13.5px;
+      transition: color .15s;
+    }
+    .footer-links a:hover { color: #fff; }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 28px;
+      font-size: 13px;
+      color: #475569;
+    }
+    .footer-bottom-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+    .footer-bottom-links a { color: #475569; text-decoration: none; }
+    .footer-bottom-links a:hover { color: #fff; }
+
+    /* ─── PRICING ────────────────────────────────────────────── */
+    .ptab {
+      padding: 9px 20px;
+      border-radius: 100px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+    }
+    .ptab-active {
+      background: #fff;
+      color: #0f172a;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+
+    .price-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .pcard {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 28px 24px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+    .pcard-featured {
+      background: #1e293b;
+      border-color: #1e293b;
+    }
+
+    .pcard-name {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .pcard-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .pcard-price {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .pcard-amount {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: #0f172a;
+    }
+    .pcard-period {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    .pcard-trial {
+      font-size: 11.5px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .pcard-featured .pcard-trial {
+      border-bottom-color: #334155;
+    }
+    .pcard-free-headline {
+      font-size: 36px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+    .pcard-free-sub {
+      font-size: 12.5px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .pcard-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      flex: 1;
+      margin-bottom: 24px;
+    }
+    .pcard-features li {
+      font-size: 13px;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pcard-features li::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      flex-shrink: 0;
+    }
+
+    .pcard-btn {
+      width: 100%;
+      padding: 11px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      border: 1.5px solid #e2e8f0;
+      background: #fff;
+      color: #0f172a;
+      transition: background .15s, border-color .15s;
+    }
+    .pcard-btn:hover { background: #f8fafc; }
+    .pcard-btn-featured {
+      background: #fff;
+      border-color: #fff;
+      color: #0f172a;
+    }
+    .pcard-btn-featured:hover { background: #f1f5f9; }
+
+    /* ─── DIVIDER ────────────────────────────────────────────── */
+    hr.div { border: none; border-top: 1px solid #f1f5f9; margin: 0; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══════════════════════════════════════════════════ -->
+<nav>
+  <a href="#" class="nav-logo">
+    <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+      <circle cx="10" cy="10" r="4" stroke="white" stroke-width="2"/>
+      <circle cx="18" cy="10" r="4" stroke="white" stroke-width="2"/>
+      <path d="M2 25c0-4 3.6-6.5 8-6.5h8c4.4 0 8 2.5 8 6.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    instaview
+  </a>
+
+  <ul class="nav-links">
+
+    <!-- Products -->
+    <li class="has-dropdown">
+      <a href="#">Products <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></a>
+      <div class="mega-dropdown" style="min-width:820px;">
+
+        <!-- sidebar -->
+        <div class="dd-sidebar">
+          <div class="dd-sidebar-label">Category</div>
+          <a href="hr-solution.html" class="dd-cat active" style="text-decoration:none;"><span class="dd-cat-dot"></span>Human Resources</a>
+          <div class="dd-cat dd-cat-disabled"><span class="dd-cat-dot"></span>Business &amp; Sales<span class="dd-cat-soon">Soon</span></div>
+          <div class="dd-cat dd-cat-disabled"><span class="dd-cat-dot"></span>Customer Support<span class="dd-cat-soon">Soon</span></div>
+          <div class="dd-cat dd-cat-disabled"><span class="dd-cat-dot"></span>Healthcare<span class="dd-cat-soon">Soon</span></div>
+          <div class="dd-cat dd-cat-disabled"><span class="dd-cat-dot"></span>Education<span class="dd-cat-soon">Soon</span></div>
+        </div>
+
+        <!-- HR content -->
+        <div class="dd-content active">
+          <!-- HR Agents -->
+          <div class="dd-col" style="flex:1;">
+            <div class="dd-col-title">HR Agents</div>
+            <a class="dd-item" href="#">
+              <div class="dd-icon">SA</div>
+              <div><div class="dd-item-title">Sourcing Agent</div><div class="dd-item-desc">Finds and engages candidates across LinkedIn, job boards and databases.</div></div>
+            </a>
+            <a class="dd-item" href="#">
+              <div class="dd-icon">SP</div>
+              <div><div class="dd-item-title">Screening Phone Agent</div><div class="dd-item-desc">Automated pre-qualification calls with structured summaries for recruiters.</div></div>
+            </a>
+            <a class="dd-item" href="#">
+              <div class="dd-icon">OM</div>
+              <div><div class="dd-item-title">Online Meeting Agent</div><div class="dd-item-desc">AI notes, key questions and follow-ups after every online interview.</div></div>
+            </a>
+            <a class="dd-item" href="#">
+              <div class="dd-icon">CE</div>
+              <div><div class="dd-item-title">Candidate Expertise Screening</div><div class="dd-item-desc">Deep assessment of candidate skills and domain knowledge before the interview stage.</div></div>
+            </a>
+            <a class="dd-item" href="#">
+              <div class="dd-icon">CT</div>
+              <div><div class="dd-item-title">Critical Thinking Assessment</div><div class="dd-item-desc">Evaluates problem-solving ability and analytical reasoning through AI-driven scenarios.</div></div>
+            </a>
+          </div>
+          <!-- HR Operations -->
+          <div class="dd-col" style="flex:1;">
+            <div class="dd-col-title">HR Operations</div>
+            <a class="dd-item" href="#">
+              <div class="dd-icon">RD</div>
+              <div><div class="dd-item-title">Database Reactivation</div><div class="dd-item-desc">Re-engages your existing candidate database with personalised AI outreach.</div></div>
+            </a>
+            <a class="dd-item" href="#">
+              <div class="dd-icon">AR</div>
+              <div><div class="dd-item-title">AI Resume Screening</div><div class="dd-item-desc">Analyses CVs, scores fit and prioritises candidates automatically.</div></div>
+            </a>
+            <a class="dd-item" href="#">
+              <div class="dd-icon">BV</div>
+              <div><div class="dd-item-title">Background Verification</div><div class="dd-item-desc">Automated verification of candidate references, credentials and employment history.</div></div>
+            </a>
+            <a class="dd-item" href="#">
+              <div class="dd-icon">CI</div>
+              <div><div class="dd-item-title">Candidate Infoline 24/7</div><div class="dd-item-desc">AI-powered hotline that answers candidate questions around the clock.</div></div>
+            </a>
+            <a class="dd-item" href="#">
+              <div class="dd-icon">CP</div>
+              <div><div class="dd-item-title">Company Process Analysis</div><div class="dd-item-desc">Audits your HR workflows and maps opportunities for AI automation.</div></div>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </li>
+
+    <!-- Solutions -->
+    <li class="has-dropdown">
+      <a href="#">Solutions <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></a>
+      <div class="mega-dropdown" style="min-width:520px;">
+
+        <!-- sidebar -->
+        <div class="dd-sidebar">
+          <div class="dd-sidebar-label">Industry</div>
+          <div class="dd-cat active"><span class="dd-cat-dot"></span>Human Resources</div>
+          <div class="dd-cat dd-cat-disabled"><span class="dd-cat-dot"></span>Business &amp; Sales<span class="dd-cat-soon">Soon</span></div>
+          <div class="dd-cat dd-cat-disabled"><span class="dd-cat-dot"></span>Customer Support<span class="dd-cat-soon">Soon</span></div>
+          <div class="dd-cat dd-cat-disabled"><span class="dd-cat-dot"></span>Healthcare<span class="dd-cat-soon">Soon</span></div>
+          <div class="dd-cat dd-cat-disabled"><span class="dd-cat-dot"></span>Education<span class="dd-cat-soon">Soon</span></div>
+        </div>
+
+        <!-- HR content -->
+        <div class="dd-content active">
+          <div class="dd-col" style="flex:1;">
+            <div class="dd-col-title">Human Resources</div>
+            <a class="dd-item" href="hr-solution.html">
+              <div class="dd-icon">HR</div>
+              <div>
+                <div class="dd-item-title">Human Resources Solution</div>
+                <div class="dd-item-desc">Speed up hiring, automate screening, sourcing and all candidate communication with AI agents built for HR teams.</div>
+              </div>
+            </a>
+            <a class="dd-item" href="hr-solution.html" style="margin-top:4px; background:#f8fafc; border:1px solid #f1f5f9;">
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:600;color:#0f172a;margin-bottom:4px;">What's included</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                  <span style="font-size:11px;background:#f1f5f9;color:#475569;padding:3px 8px;border-radius:100px;">Screening calls</span>
+                  <span style="font-size:11px;background:#f1f5f9;color:#475569;padding:3px 8px;border-radius:100px;">Sourcing</span>
+                  <span style="font-size:11px;background:#f1f5f9;color:#475569;padding:3px 8px;border-radius:100px;">CV analysis</span>
+                  <span style="font-size:11px;background:#f1f5f9;color:#475569;padding:3px 8px;border-radius:100px;">Assessments</span>
+                  <span style="font-size:11px;background:#f1f5f9;color:#475569;padding:3px 8px;border-radius:100px;">Background checks</span>
+                </div>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </li>
+
+    <li><a href="#references">Testimonials</a></li>
+    <li><a href="#integration">Integrations</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#blogs">Blog</a></li>
+  </ul>
+
+  <div class="nav-right">
+    <button class="flag-btn" title="Language">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
+        <clipPath id="circle"><circle cx="14" cy="14" r="14"/></clipPath>
+        <g clip-path="url(#circle)">
+          <rect width="28" height="10" fill="#fff"/>
+          <rect y="9" width="28" height="10" fill="#0039a6"/>
+          <rect y="18" width="28" height="10" fill="#d7141a"/>
+        </g>
+        <circle cx="14" cy="14" r="13.5" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+      </svg>
+    </button>
+    <button class="nav-cta">
+      Contact Sales
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- ═══ 1. HERO ═══════════════════════════════════════════════════ -->
+<section class="hero">
+  <h1>AI Agents That Help Your Business Grow Faster</h1>
+  <p>Automate calls, communication, hiring, sales, support, healthcare operations and internal workflows with AI agents that work inside your existing tools.</p>
+  <div class="hero-btns">
+    <a href="#produkty" class="btn btn-dark">Explore AI Agents</a>
+    <a href="#who" class="btn">See who it's for</a>
+  </div>
+</section>
+
+<!-- ── LOGO BAR ─────────────────────────────────────────────────── -->
+<div style="background:#fff; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9; padding:20px 48px;">
+  <div style="display:flex; align-items:center; gap:0; max-width:1000px; margin:0 auto;">
+    <span style="font-size:12px; font-weight:600; color:#94a3b8; white-space:nowrap; margin-right:40px; text-transform:uppercase; letter-spacing:.07em;">Trusted by</span>
+    <div style="display:flex; align-items:center; justify-content:space-between; flex:1; flex-wrap:wrap; gap:24px;">
+      <span style="font-size:16px; font-weight:800; color:#cbd5e1; letter-spacing:-0.5px;">Acme Corp</span>
+      <span style="font-size:16px; font-weight:800; color:#cbd5e1; letter-spacing:-0.5px;">GlobalHR</span>
+      <span style="font-size:16px; font-weight:800; color:#cbd5e1; letter-spacing:-0.5px;">TalentFlow</span>
+      <span style="font-size:16px; font-weight:800; color:#cbd5e1; letter-spacing:-0.5px;">Staffex</span>
+      <span style="font-size:16px; font-weight:800; color:#cbd5e1; letter-spacing:-0.5px;">RecruitPro</span>
+      <span style="font-size:16px; font-weight:800; color:#cbd5e1; letter-spacing:-0.5px;">HireBase</span>
+      <span style="font-size:16px; font-weight:800; color:#cbd5e1; letter-spacing:-0.5px;">Workline</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 2. WHAT CAN YOU DO ════════════════════════════════════════ -->
+<div class="section-bg">
+  <div class="section-inner">
+
+    <!-- heading -->
+    <div style="max-width:620px; margin:0 auto 40px; text-align:center;">
+      <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;">What InstaView can do</p>
+      <h2 style="font-size:38px;font-weight:800;color:#0f172a;line-height:1.15;margin-bottom:14px;">Stop doing it manually.<br>Let AI agents handle it.</h2>
+      <p style="font-size:15px;color:#64748b;line-height:1.65;">InstaView replaces the repetitive communication work — calls, screenings, follow-ups, reports — with AI agents that run 24/7, inside your existing tools.</p>
+    </div>
+
+    <!-- bento grid -->
+    <div class="bento-grid">
+
+      <!-- LARGE: AI Calls -->
+      <div class="bento-card bento-large bento-dark" style="padding:28px 24px;">
+        <div class="wcy-card-icon wcy-icon-dark" style="margin-bottom:16px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.12 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.37a16 16 0 0 0 5.73 5.73l1.44-1.44a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 14.92z"/></svg>
+        </div>
+        <h3 style="font-size:19px;font-weight:800;color:#fff;margin-bottom:10px;">AI Phone Agent</h3>
+        <p style="font-size:13.5px;color:#64748b;line-height:1.65;max-width:300px;">Calls candidates, qualifies leads and collects structured responses — exactly like a human agent, but 24/7 and at unlimited scale. No scripts to manage. No missed calls.</p>
+        <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="bento-tag">Outbound calls</span>
+          <span class="bento-tag">Inbound calls</span>
+          <span class="bento-tag">Multi-language</span>
+        </div>
+      </div>
+
+      <!-- Candidate Screening -->
+      <div class="bento-card">
+        <div class="wcy-card-icon" style="margin-bottom:16px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3 class="bento-title">Candidate Screening</h3>
+        <p class="bento-desc">Screens hundreds of CVs and conducts initial interviews automatically. Delivers scored summaries to your ATS in minutes, not days.</p>
+      </div>
+
+      <!-- Lead Qualification -->
+      <div class="bento-card">
+        <div class="wcy-card-icon" style="margin-bottom:16px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <h3 class="bento-title">Lead Qualification</h3>
+        <p class="bento-desc">Qualifies every inbound lead instantly. Asks the right questions and routes only high-intent prospects to your sales team.</p>
+      </div>
+
+      <!-- Meeting Summaries -->
+      <div class="bento-card">
+        <div class="wcy-card-icon" style="margin-bottom:16px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3 class="bento-title">Meeting Summaries</h3>
+        <p class="bento-desc">Every call gets an instant structured summary — decisions, action items and next steps, sent automatically to the right people.</p>
+      </div>
+
+      <!-- Customer Support -->
+      <div class="bento-card">
+        <div class="wcy-card-icon" style="margin-bottom:16px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3 class="bento-title">Customer Support</h3>
+        <p class="bento-desc">Handles FAQs and helpdesk queries across phone, email and chat. Escalates only what truly needs a human touch.</p>
+      </div>
+
+      <!-- Process Analytics -->
+      <div class="bento-card">
+        <div class="wcy-card-icon" style="margin-bottom:16px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h3 class="bento-title">Process Analytics</h3>
+        <p class="bento-desc">Analyses how your workflows actually run, identifies bottlenecks and generates AI-powered recommendations to fix them.</p>
+      </div>
+
+      <!-- WIDE: integrations + data -->
+      <div class="bento-card bento-wide" style="background:#f8fafc;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;">
+          <div>
+            <div class="wcy-card-icon" style="margin-bottom:16px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+            </div>
+            <h3 class="bento-title">Works in your existing tools</h3>
+            <p class="bento-desc">Connects to your ATS, CRM, calendar and HR systems. Agents run inside the tools your team already uses — no rip-and-replace.</p>
+          </div>
+          <div>
+            <div class="wcy-card-icon" style="margin-bottom:16px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            </div>
+            <h3 class="bento-title">Structured Data Collection</h3>
+            <p class="bento-desc">Gathers data from employees, candidates or customers via voice or chat — no manual forms, no chasing for responses.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- use-case pills -->
+    <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+      <span class="usecase-pill">Appointment booking</span>
+      <span class="usecase-pill">Candidate reactivation</span>
+      <span class="usecase-pill">Background checks</span>
+      <span class="usecase-pill">Sourcing outreach</span>
+      <span class="usecase-pill">Employee onboarding</span>
+      <span class="usecase-pill">Feedback collection</span>
+      <span class="usecase-pill">Sales follow-ups</span>
+      <span class="usecase-pill">Healthcare reception</span>
+      <span class="usecase-pill">+ much more</span>
+    </div>
+
+    <!-- CTA bar -->
+    <div class="wcy-bottom" style="margin-top:48px;">
+      <div class="wcy-bottom-text">
+        <h3>See what InstaView can automate in your business.</h3>
+        <p>Book a free 30-minute demo — a live walkthrough tailored to your exact workflows.</p>
+      </div>
+      <div class="wcy-bottom-btns">
+        <a href="#contact" class="btn-white">Book a free demo</a>
+        <a href="#pricing" class="btn-outline-white">See pricing</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<hr class="div">
+
+<!-- ═══ PLATFORM STATS ═══════════════════════════════════════════ -->
+<section style="background:#fff;padding:100px 48px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;grid-template-rows:auto auto auto;gap:20px;align-items:center;">
+
+      <!-- top-left: light -->
+      <div style="grid-column:1/3;grid-row:1;background:#f1f4f9;border-radius:20px;padding:28px 24px;min-height:170px;display:flex;flex-direction:column;justify-content:space-between;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+          <span style="font-size:13px;font-weight:600;color:#475569;line-height:1.4;">Active<br>businesses</span>
+          <div style="width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:36px;font-weight:800;color:#0f172a;letter-spacing:-1px;line-height:1;margin-bottom:6px;">500+</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.5;">Companies automating with InstaView agents.</div>
+        </div>
+      </div>
+
+      <!-- top spacer -->
+      <div style="grid-column:3;grid-row:1;"></div>
+
+      <!-- top-right: dark -->
+      <div style="grid-column:4/6;grid-row:1;background:#0f172a;border-radius:20px;padding:28px 24px;min-height:170px;display:flex;flex-direction:column;justify-content:space-between;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+          <span style="font-size:13px;font-weight:600;color:#94a3b8;line-height:1.4;">AI conversations<br>handled</span>
+          <div style="width:38px;height:38px;border-radius:50%;background:#1e293b;border:1px solid #334155;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.12 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1;margin-bottom:6px;">1M+</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.5;">Automated calls and interviews every month.</div>
+        </div>
+      </div>
+
+      <!-- center text -->
+      <div style="grid-column:1/6;grid-row:2;text-align:center;padding:32px 0;">
+        <span style="display:inline-block;font-size:12px;font-weight:600;color:#475569;border:1px solid #e2e8f0;border-radius:100px;padding:5px 14px;margin-bottom:20px;">Platform stats</span>
+        <h2 style="font-size:44px;font-weight:800;color:#0f172a;letter-spacing:-1px;line-height:1.1;margin-bottom:14px;">Powering smarter<br>business decisions</h2>
+        <p style="font-size:16px;color:#475569;max-width:520px;margin:0 auto;line-height:1.65;">Real-time AI agents, voice technology and smart automation working together so your team can focus on what matters.</p>
+      </div>
+
+      <!-- bottom-left: dark -->
+      <div style="grid-column:1/2;grid-row:3;background:#0f172a;border-radius:20px;padding:28px 24px;min-height:180px;display:flex;flex-direction:column;justify-content:space-between;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+          <span style="font-size:13px;font-weight:600;color:#94a3b8;line-height:1.4;">AI agents<br>deployed</span>
+          <div style="width:38px;height:38px;border-radius:50%;background:#1e293b;border:1px solid #334155;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1;margin-bottom:6px;">10K+</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.5;">Active agents running across workflows.</div>
+        </div>
+      </div>
+
+      <!-- bottom-center: indigo -->
+      <div style="grid-column:2/4;grid-row:3;background:#4f46e5;border-radius:20px;padding:28px 24px;min-height:180px;display:flex;flex-direction:column;justify-content:space-between;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+          <span style="font-size:13px;font-weight:600;color:rgba(255,255,255,.7);line-height:1.4;">Integrations<br>available</span>
+          <div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:36px;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1;margin-bottom:6px;">20+</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.75);line-height:1.5;">Tools connected to your existing stack in minutes.</div>
+        </div>
+      </div>
+
+      <!-- bottom-right: light -->
+      <div style="grid-column:4/6;grid-row:3;background:#f1f4f9;border-radius:20px;padding:28px 24px;min-height:180px;display:flex;flex-direction:column;justify-content:space-between;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+          <span style="font-size:13px;font-weight:600;color:#475569;line-height:1.4;">Platform<br>uptime</span>
+          <div style="width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:36px;font-weight:800;color:#0f172a;letter-spacing:-1px;line-height:1;margin-bottom:6px;">99.9%</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.5;">Reliable access to your AI workforce, always on.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<hr class="div">
+
+<!-- ═══ 3. WHO IS IT FOR ══════════════════════════════════════════ -->
+<section class="section" id="who">
+  <div style="text-align:center; max-width:580px; margin:0 auto 48px;">
+    <h2 class="big">Who is it for?</h2>
+    <p class="lead" style="font-size:16px;">AI automation for teams that communicate, operate and scale</p>
+  </div>
+
+  <div style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:12px;">
+
+    <!-- Active: Human Resources -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:32px;background:#0f172a;border-radius:20px;padding:32px 40px;">
+      <div>
+        <div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:6px;">Human Resources</div>
+        <div style="font-size:14px;color:#94a3b8;line-height:1.6;max-width:480px;">Speed up hiring, screening, sourcing, candidate communication, testing and internal HR processes.</div>
+      </div>
+      <a href="hr-solution.html" style="white-space:nowrap;flex-shrink:0;padding:11px 24px;border-radius:100px;font-size:13.5px;font-weight:600;background:#fff;color:#0f172a;text-decoration:none;display:inline-block;">Learn more</a>
+    </div>
+
+    <!-- Coming soon: Business & Sales -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:32px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:20px;padding:24px 40px;opacity:.6;cursor:default;">
+      <div>
+        <div style="font-size:17px;font-weight:700;color:#94a3b8;margin-bottom:6px;">Business &amp; Sales</div>
+        <div style="font-size:14px;color:#cbd5e1;line-height:1.6;max-width:480px;">Automate lead qualification, outreach, follow-ups and CRM updates with AI agents built for revenue teams.</div>
+      </div>
+      <span style="white-space:nowrap;flex-shrink:0;padding:7px 16px;border-radius:100px;font-size:12px;font-weight:600;background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;">Coming soon</span>
+    </div>
+
+    <!-- Coming soon: Customer Support -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:32px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:20px;padding:24px 40px;opacity:.6;cursor:default;">
+      <div>
+        <div style="font-size:17px;font-weight:700;color:#94a3b8;margin-bottom:6px;">Customer Support</div>
+        <div style="font-size:14px;color:#cbd5e1;line-height:1.6;max-width:480px;">Handle inbound queries, FAQs and escalations automatically — across phone, chat and email, 24/7.</div>
+      </div>
+      <span style="white-space:nowrap;flex-shrink:0;padding:7px 16px;border-radius:100px;font-size:12px;font-weight:600;background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;">Coming soon</span>
+    </div>
+
+    <!-- Coming soon: Healthcare -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:32px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:20px;padding:24px 40px;opacity:.6;cursor:default;">
+      <div>
+        <div style="font-size:17px;font-weight:700;color:#94a3b8;margin-bottom:6px;">Healthcare</div>
+        <div style="font-size:14px;color:#cbd5e1;line-height:1.6;max-width:480px;">Automate patient intake, appointment reminders, follow-ups and internal clinic communication.</div>
+      </div>
+      <span style="white-space:nowrap;flex-shrink:0;padding:7px 16px;border-radius:100px;font-size:12px;font-weight:600;background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;">Coming soon</span>
+    </div>
+
+    <!-- Coming soon: Education -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:32px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:20px;padding:24px 40px;opacity:.6;cursor:default;">
+      <div>
+        <div style="font-size:17px;font-weight:700;color:#94a3b8;margin-bottom:6px;">Education</div>
+        <div style="font-size:14px;color:#cbd5e1;line-height:1.6;max-width:480px;">Streamline student admissions, support queries and internal admin workflows with AI automation.</div>
+      </div>
+      <span style="white-space:nowrap;flex-shrink:0;padding:7px 16px;border-radius:100px;font-size:12px;font-weight:600;background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;">Coming soon</span>
+    </div>
+
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ═══ 4. TESTIMONIALS ══════════════════════════════════════════ -->
+<section class="section" id="references">
+  <div style="text-align:center; max-width:560px; margin:0 auto;">
+    <h2 class="big">What our clients say</h2>
+    <p class="lead" style="font-size:15px;">Companies that use InstaView save time, reduce costs and hire faster.</p>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:48px;">
+
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:28px;">
+      <p style="font-size:14.5px; color:#0f172a; line-height:1.7; margin-bottom:20px;">"InstaView reduced our screening process by 70%. Instead of three days, we now get results within hours."</p>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:38px; height:38px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#475569;">MK</div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#0f172a;">Martin Kováč</div>
+          <div style="font-size:12px; color:#64748b;">HR Director, Slovenská Poisťovňa</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:28px;">
+      <p style="font-size:14.5px; color:#0f172a; line-height:1.7; margin-bottom:20px;">"The Sourcing Agent reaches hundreds of candidates daily. Our recruiters can now focus entirely on interviews."</p>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:38px; height:38px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#475569;">ZN</div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#0f172a;">Zuzana Novotná</div>
+          <div style="font-size:12px; color:#64748b;">Head of Talent, Dedoles</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:28px;">
+      <p style="font-size:14.5px; color:#0f172a; line-height:1.7; margin-bottom:20px;">"The Candidate Infoline 24/7 changed everything. Candidates get answers instantly — even at night and on weekends."</p>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:38px; height:38px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#475569;">TH</div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#0f172a;">Tomáš Horváth</div>
+          <div style="font-size:12px; color:#64748b;">CEO, Staffing Solutions</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ═══ 5. INTEGRATION ════════════════════════════════════════════ -->
+<div id="integration" style="background:#161616; padding:100px 48px; text-align:center;">
+
+  <div style="display:inline-block; border:1px solid #333; border-radius:100px; padding:6px 18px; font-size:12px; font-weight:600; color:#999; margin-bottom:28px; letter-spacing:.04em;">
+    Integrations
+  </div>
+
+  <h2 style="font-size:44px; font-weight:800; color:#fff; line-height:1.1; letter-spacing:-1px; max-width:560px; margin:0 auto;">
+    Connect with the tools you already use.
+  </h2>
+  <p style="font-size:16px; color:#888; line-height:1.7; max-width:520px; margin:16px auto 32px;">
+    Seamlessly integrate with your ATS, calendar, job boards and HR tools to keep everything connected and up to date.
+  </p>
+
+  <a href="#" style="display:inline-flex; align-items:center; gap:8px; background:transparent; color:#fff; border:1.5px solid #444; padding:12px 24px; border-radius:100px; font-size:14px; font-weight:600; text-decoration:none; margin-bottom:72px; transition:border-color .15s;" onmouseover="this.style.borderColor='#888'" onmouseout="this.style.borderColor='#444'">
+    Explore all integrations →
+  </a>
+
+  <!-- Circular diagram -->
+  <div style="position:relative; width:380px; height:380px; margin:0 auto 64px;">
+
+    <!-- Outer circle -->
+    <div style="position:absolute; inset:0; border-radius:50%; border:1px dashed #333;"></div>
+    <!-- Inner circle -->
+    <div style="position:absolute; inset:60px; border-radius:50%; border:1px dashed #2a2a2a;"></div>
+
+    <!-- Center icon -->
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:64px; height:64px; background:#2a2a2a; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/><path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75L19 15z"/></svg>
+    </div>
+
+    <!-- Top icons (outer ring) -->
+    <!-- Top-left: briefcase -->
+    <div style="position:absolute; top:28px; left:88px; width:48px; height:48px; background:#222; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid #333;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+    </div>
+    <!-- Top-center: calendar -->
+    <div style="position:absolute; top:8px; left:50%; transform:translateX(-50%); width:48px; height:48px; background:#222; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid #333;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <!-- Top-right: search -->
+    <div style="position:absolute; top:28px; right:88px; width:48px; height:48px; background:#222; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid #333;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+
+    <!-- Middle icons (outer ring) -->
+    <!-- Left: email -->
+    <div style="position:absolute; top:50%; left:0; transform:translateY(-50%); width:48px; height:48px; background:#222; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid #333;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    </div>
+    <!-- Right: building/ATS -->
+    <div style="position:absolute; top:50%; right:0; transform:translateY(-50%); width:48px; height:48px; background:#222; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid #333;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M9 21V9"/></svg>
+    </div>
+
+    <!-- Bottom icons (outer ring) -->
+    <!-- Bottom-left: globe -->
+    <div style="position:absolute; bottom:28px; left:88px; width:48px; height:48px; background:#222; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid #333;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    </div>
+    <!-- Bottom-center: users -->
+    <div style="position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:48px; height:48px; background:#222; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid #333;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <!-- Bottom-right: database -->
+    <div style="position:absolute; bottom:28px; right:88px; width:48px; height:48px; background:#222; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid #333;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+    </div>
+
+  </div>
+
+  <!-- Tool badges -->
+  <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; max-width:700px; margin:0 auto 32px;">
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Google Calendar</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Outlook</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Recruitis</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Greenhouse</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Workday</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Profesia</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Prace.cz</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Slack</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Microsoft Teams</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Gmail</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">Recru</span>
+    <span style="border:1px solid #333; border-radius:100px; padding:7px 18px; font-size:13px; color:#bbb; background:#1e1e1e;">CRM systems</span>
+  </div>
+
+  <p style="font-size:15px; font-weight:700; color:#fff;">20+ integrations available and growing</p>
+</div>
+
+<!-- ═══ CONTACT / CALENDLY CTA ═══════════════════════════════════ -->
+<section class="cta-section" id="contact">
+  <p class="cta-tag">Free consultation</p>
+  <h2>Try InstaView for free.<br>Talk to our team first.</h2>
+  <p class="cta-sub">Book a 30-minute call with our team. We'll show you exactly how InstaView fits into your workflow — no commitment required.</p>
+  <div class="cta-btns">
+    <a href="https://calendly.com/lubosrepka16/lubos-repka-instaview" target="_blank" class="btn-dark">Book a free consultation</a>
+    <a href="mailto:lubosrepka16@gmail.com" class="btn-light">Send us a message</a>
+  </div>
+  <div class="calendly-wrap">
+    <iframe
+      src="https://calendly.com/lubosrepka16/lubos-repka-instaview?embed_domain=instaview.ai&embed_type=Inline&hide_gdpr_banner=1&primary_color=0f172a"
+      width="100%"
+      height="700"
+      frameborder="0"
+      scrolling="no"
+      style="display:block; border:none;">
+    </iframe>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ═══ SECURITY SECTION ══════════════════════════════════════════ -->
+<section style="background:#fff;padding:100px 48px;">
+  <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;">
+
+    <!-- LEFT: visual diagram -->
+    <div style="background:#f1f4f9;border-radius:24px;padding:48px 32px;display:flex;flex-direction:column;align-items:center;gap:0;">
+      <div style="width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(99,102,241,.25);">
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+      </div>
+      <div style="width:1px;height:40px;border-left:2px dashed #c7d2e7;margin:0 auto;"></div>
+      <div style="width:52px;height:52px;border-radius:50%;background:#fff;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <div style="position:relative;width:100%;margin-top:0;">
+        <svg width="100%" height="50" viewBox="0 0 320 50" preserveAspectRatio="none" style="display:block;">
+          <line x1="160" y1="0" x2="40" y2="50" stroke="#c7d2e7" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <line x1="160" y1="0" x2="160" y2="50" stroke="#c7d2e7" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <line x1="160" y1="0" x2="280" y2="50" stroke="#c7d2e7" stroke-width="1.5" stroke-dasharray="5 4"/>
+        </svg>
+      </div>
+      <div style="display:flex;gap:16px;width:100%;justify-content:space-between;margin-top:4px;">
+        <div style="flex:1;background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:16px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05);">
+          <div style="font-size:8px;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px;">EU</div>
+          <div style="font-size:14px;font-weight:800;color:#0f172a;letter-spacing:-0.3px;">AI Act</div>
+          <div style="font-size:8px;font-weight:600;color:#94a3b8;margin-top:2px;">COMPLIANT</div>
+        </div>
+        <div style="flex:1;background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:16px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05);">
+          <div style="font-size:8px;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px;"> </div>
+          <div style="font-size:13px;font-weight:800;color:#0f172a;letter-spacing:-0.3px;">ISO 27001</div>
+          <div style="font-size:8px;font-weight:600;color:#94a3b8;margin-top:2px;">STANDARD</div>
+        </div>
+        <div style="flex:1;background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:16px 10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05);">
+          <div style="display:flex;justify-content:center;gap:2px;margin-bottom:2px;"><span style="font-size:8px;color:#94a3b8;">★ ★ ★ ★ ★</span></div>
+          <div style="font-size:14px;font-weight:800;color:#0f172a;letter-spacing:-0.3px;">GDPR</div>
+          <div style="font-size:8px;font-weight:600;color:#94a3b8;margin-top:2px;">PROTECTED</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: text -->
+    <div>
+      <span style="display:inline-block;font-size:12px;font-weight:600;color:#475569;border:1px solid #e2e8f0;border-radius:100px;padding:5px 14px;margin-bottom:20px;">Security &amp; compliance</span>
+      <h2 style="font-size:44px;font-weight:800;color:#0f172a;line-height:1.1;letter-spacing:-1px;margin-bottom:28px;">Your data is protected<br>at every level</h2>
+      <a href="#contact" style="display:inline-flex;align-items:center;gap:8px;background:#0f172a;color:#fff;padding:13px 24px;border-radius:100px;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:36px;">Get started now <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:14px;">
+        <li style="display:flex;align-items:center;gap:10px;font-size:14px;color:#475569;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>End-to-end encryption</li>
+        <li style="display:flex;align-items:center;gap:10px;font-size:14px;color:#475569;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>Data processed securely in EU servers only</li>
+        <li style="display:flex;align-items:center;gap:10px;font-size:14px;color:#475569;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>Privacy-first approach</li>
+        <li style="display:flex;align-items:center;gap:10px;font-size:14px;color:#475569;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>AI Act &amp; GDPR compliant</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ═══ 6. BLOGS ══════════════════════════════════════════════════ -->
+<div class="section-bg" id="blogs">
+  <div class="section-inner">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px;">
+      <div>
+        <h2 class="big">Blogs</h2>
+        <p class="lead" style="font-size:15px;">Insights, guides and news about AI automation.</p>
+      </div>
+      <a href="#" class="btn">View all posts</a>
+    </div>
+
+    <div class="blog-grid">
+      <div class="blog-card">
+        <div class="blog-thumb">Image placeholder</div>
+        <div class="blog-body">
+          <div class="blog-tag">HR Automation</div>
+          <div class="blog-title">How AI agents are transforming recruitment in 2025</div>
+          <div class="blog-desc">From sourcing to screening — a practical guide to automating your hiring process with AI.</div>
+        </div>
+      </div>
+      <div class="blog-card">
+        <div class="blog-thumb">Image placeholder</div>
+        <div class="blog-body">
+          <div class="blog-tag">Sales</div>
+          <div class="blog-title">5 ways AI can double your sales team's productivity</div>
+          <div class="blog-desc">Outreach, follow-ups, CRM updates — let AI handle the repetitive so your team can close.</div>
+        </div>
+      </div>
+      <div class="blog-card">
+        <div class="blog-thumb">Image placeholder</div>
+        <div class="blog-body">
+          <div class="blog-tag">Customer Support</div>
+          <div class="blog-title">AI agents in customer support: what actually works</div>
+          <div class="blog-desc">Real examples of companies cutting response times and support costs with AI automation.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="div">
+
+<!-- ═══ PRICING ══════════════════════════════════════════════════ -->
+<section class="section" id="pricing">
+
+  <div style="text-align:center; max-width:580px; margin:0 auto 56px;">
+    <h2 class="big">Simple, transparent pricing</h2>
+    <p class="lead" style="font-size:15px; margin-top:10px;">Each solution has its own plans — designed for the team that uses it.</p>
+  </div>
+
+  <div style="max-width:920px; margin:0 auto; display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+
+    <!-- HR Agents -->
+    <div style="border:1.5px solid #e2e8f0; border-radius:20px; padding:32px 28px; background:#fff; display:flex; flex-direction:column; gap:0;">
+      <div style="width:44px;height:44px;background:#f0f9ff;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#0ea5e9;margin-bottom:6px;">Available now</div>
+      <div style="font-size:20px;font-weight:800;color:#0f172a;letter-spacing:-0.4px;margin-bottom:8px;">HR Agents</div>
+      <div style="font-size:13.5px;color:#64748b;line-height:1.55;margin-bottom:24px;">AI-powered recruitment — from sourcing and screening to background verification.</div>
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:28px;">7-day free trial included</div>
+      <a href="hr-solution.html#pricing" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:600;color:#0f172a;text-decoration:none;padding:13px 20px;border:1.5px solid #0f172a;border-radius:100px;transition:background .15s,color .15s;margin-top:auto;" onmouseover="this.style.background='#0f172a';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#0f172a'">See HR pricing <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+
+    <!-- Sales Agents (coming soon) -->
+    <div style="border:1.5px dashed #e2e8f0; border-radius:20px; padding:32px 28px; background:#fafafa; display:flex; flex-direction:column; gap:0;">
+      <div style="width:44px;height:44px;background:#f8fafc;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#cbd5e1;margin-bottom:6px;">Coming soon</div>
+      <div style="font-size:20px;font-weight:800;color:#cbd5e1;letter-spacing:-0.4px;margin-bottom:8px;">Sales Agents</div>
+      <div style="font-size:13.5px;color:#cbd5e1;line-height:1.55;margin-bottom:24px;">Automate outreach, qualification and follow-up across your entire pipeline.</div>
+      <div style="margin-top:auto;display:inline-flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:600;color:#cbd5e1;padding:13px 20px;border:1.5px dashed #e2e8f0;border-radius:100px;">Notify me</div>
+    </div>
+
+    <!-- Business Agents (coming soon) -->
+    <div style="border:1.5px dashed #e2e8f0; border-radius:20px; padding:32px 28px; background:#fafafa; display:flex; flex-direction:column; gap:0;">
+      <div style="width:44px;height:44px;background:#f8fafc;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#cbd5e1;margin-bottom:6px;">Coming soon</div>
+      <div style="font-size:20px;font-weight:800;color:#cbd5e1;letter-spacing:-0.4px;margin-bottom:8px;">Business Agents</div>
+      <div style="font-size:13.5px;color:#cbd5e1;line-height:1.55;margin-bottom:24px;">Streamline operations, reporting and process automation across departments.</div>
+      <div style="margin-top:auto;display:inline-flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:600;color:#cbd5e1;padding:13px 20px;border:1.5px dashed #e2e8f0;border-radius:100px;">Notify me</div>
+    </div>
+
+  </div>
+
+  <!-- VOICE PRICING -->
+
+</section>
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a href="#" class="footer-logo">
+        <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+          <circle cx="10" cy="10" r="4" stroke="white" stroke-width="2"/>
+          <circle cx="18" cy="10" r="4" stroke="white" stroke-width="2"/>
+          <path d="M2 25c0-4 3.6-6.5 8-6.5h8c4.4 0 8 2.5 8 6.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        instaview
+      </a>
+      <p class="footer-tagline">AI agents that work inside your existing business tools.</p>
+    </div>
+
+    <div class="footer-newsletter">
+      <div class="footer-col-title" style="margin-bottom:0;">Newsletter</div>
+      <p>Get the latest on AI automation — tips, product updates and case studies.</p>
+      <form class="newsletter-form" onsubmit="handleNewsletter(event)">
+        <input type="email" placeholder="your@email.com" required />
+        <button type="submit">Subscribe</button>
+      </form>
+    </div>
+
+    <div>
+      <div class="footer-col-title">Products</div>
+      <ul class="footer-links">
+        <li><a href="#">HR Agents</a></li>
+        <li><a href="#">Sales Agents</a></li>
+        <li><a href="#">Business Agents</a></li>
+        <li><a href="#">AI Adoption</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="footer-col-title">Solutions</div>
+      <ul class="footer-links">
+        <li><a href="#">Human Resources</a></li>
+        <li><a href="#">Business &amp; Sales</a></li>
+        <li><a href="#">Customer Support</a></li>
+        <li><a href="#">Healthcare</a></li>
+        <li><a href="#">Education</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="footer-col-title">Company</div>
+      <ul class="footer-links">
+        <li><a href="#">References</a></li>
+        <li><a href="#">Blogs</a></li>
+        <li><a href="#">Pricing</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="footer-col-title">Legal</div>
+      <ul class="footer-links">
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Terms of Service</a></li>
+        <li><a href="#">Cookie Policy</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <span>© 2026 instaview. All rights reserved.</span>
+    <ul class="footer-bottom-links">
+      <li><a href="#">Privacy</a></li>
+      <li><a href="#">Terms</a></li>
+      <li><a href="#">Cookies</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  // ── PRICING TABS ──────────────────────────────────────────
+  let isAnnual = false;
+
+  function handleNewsletter(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const input = e.target.querySelector('input');
+    btn.textContent = '✓ Subscribed!';
+    btn.style.background = '#dcfce7';
+    btn.style.color = '#15803d';
+    input.value = '';
+    input.disabled = true;
+    btn.disabled = true;
+  }
+
+  function switchPricing(key) {
+    document.querySelectorAll('.pricing-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.ptab').forEach(t => t.classList.remove('ptab-active'));
+    document.getElementById('pricing-' + key).style.display = 'block';
+    document.getElementById('tab-' + key).classList.add('ptab-active');
+  }
+
+  function toggleBilling() {
+    isAnnual = !isAnnual;
+    const knob = document.getElementById('billing-knob');
+    const lblM = document.getElementById('lbl-monthly');
+    const lblA = document.getElementById('lbl-annual');
+    knob.style.transform = isAnnual ? 'translateX(20px)' : 'translateX(0)';
+    lblM.style.color = isAnnual ? '#64748b' : '#0f172a';
+    lblM.style.fontWeight = isAnnual ? '500' : '600';
+    lblA.style.color = isAnnual ? '#0f172a' : '#64748b';
+    lblA.style.fontWeight = isAnnual ? '600' : '500';
+
+    document.querySelectorAll('.pcard-amount').forEach(el => {
+      const monthly = parseInt(el.dataset.monthly);
+      const annual = parseInt(el.dataset.annual);
+      if (!monthly) return;
+      el.textContent = '€' + (isAnnual ? annual : monthly);
+    });
+  }
+
+  // ── DROPDOWN CATS ─────────────────────────────────────────
+  function switchCat(el, key) {
+    const dropdown = el.closest('.mega-dropdown');
+    dropdown.querySelectorAll('.dd-cat').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    dropdown.querySelectorAll('.dd-content').forEach(c => c.classList.remove('active'));
+    const panel = dropdown.querySelector('#dd-' + key);
+    if (panel) panel.classList.add('active');
+  }
+</script>
+
+<!-- ═══ MASCOT AI WIDGET — MAIN PAGE ════════════════════════════ -->
+<div id="msc-wrap" class="msc-state-idle">
+
+  <div id="msc-greeting">👋 Hey, I'm Boxy!</div>
+
+  <div id="msc-panel">
+    <div class="msc-ph">
+      <div class="msc-ph-avatar">
+        <svg viewBox="0 0 100 122" width="26" height="32"><defs><linearGradient id="mhg" x1="20%" y1="0%" x2="80%" y2="100%"><stop offset="0%" stop-color="#94a3b8"/><stop offset="100%" stop-color="#64748b"/></linearGradient></defs><ellipse cx="11" cy="63" rx="13" ry="8" fill="url(#mhg)" transform="rotate(-22 11 63)"/><ellipse cx="89" cy="63" rx="13" ry="8" fill="url(#mhg)" transform="rotate(22 89 63)"/><rect x="17" y="15" width="66" height="74" rx="21" fill="url(#mhg)"/><rect x="26" y="82" width="18" height="24" rx="9" fill="url(#mhg)"/><rect x="56" y="82" width="18" height="24" rx="9" fill="url(#mhg)"/><ellipse cx="37" cy="57" rx="5" ry="7" fill="rgba(255,255,255,.8)"/><path d="M52,56 Q62,49 72,56" stroke="rgba(255,255,255,.8)" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div class="msc-ph-name">Boxy</div>
+        <div class="msc-ph-sub"><span class="msc-ph-dot"></span>InstaView AI · online</div>
+      </div>
+      <button class="msc-chat-switch" onclick="switchToChat()" title="Switch to chat">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </button>
+      <button class="msc-ph-close" onclick="mscClose()" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- VOICE MODE (default) -->
+    <div id="msc-voice-view">
+      <div class="voice-vis">
+        <div class="vring"></div><div class="vring"></div><div class="vring"></div>
+        <div class="voice-face">
+          <div class="vface-eye oval"></div>
+          <div class="vface-eye wink">
+            <svg viewBox="0 0 100 60" width="100%" height="100%" style="overflow:visible;">
+              <path d="M 5 50 Q 50 -15 95 50" fill="none" stroke="#0f172a" stroke-width="22" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <p class="voice-status" id="voice-status">Click and talk to Boxy</p>
+      <p class="voice-transcript" id="voice-transcript"></p>
+      <button class="voice-mic-btn" id="voice-mic-btn" onclick="toggleVoice()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span id="voice-mic-label">Talk to Boxy</span>
+      </button>
+      <button class="voice-to-chat-btn" onclick="switchToChat()">or type instead →</button>
+    </div>
+
+    <!-- CHAT MODE (hidden) -->
+    <div id="msc-chat-view" style="display:none;">
+      <div class="msc-msgs" id="msc-msgs">
+        <div class="msc-msg-ai"><div class="msc-bubble">Hey! 👋 Type your question below.</div></div>
+      </div>
+      <div class="msc-quick-wrap" id="msc-quick-wrap">
+        <button class="msc-quick-btn" onclick="mscQuick('Ako funguje AI screening?')">How does it work?</button>
+        <button class="msc-quick-btn" onclick="mscQuick('Koľko to stojí?')">Pricing?</button>
+        <button class="msc-quick-btn" onclick="mscQuick('Chcem demo')">Demo</button>
+      </div>
+      <form class="msc-input-row" onsubmit="mscSend(event)">
+        <input class="msc-input" id="msc-input" type="text" placeholder="Type a message…" autocomplete="off"/>
+        <button class="msc-send-btn" type="submit" aria-label="Send">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </form>
+      <button class="chat-to-voice-btn" onclick="switchToVoice()">← Back to voice</button>
+    </div>
+  </div>
+
+  <div id="msc-char" onclick="mscToggle()">
+    <div id="msc-dots"><span></span><span></span><span></span></div>
+    <div class="agent-container">
+    <div class="agent-floor-shadow"></div>
+    <div class="agent-3d" id="msc-agent">
+      <div class="agent-arm left"></div>
+      <div class="agent-arm right"></div>
+      <div class="agent-leg left"></div>
+      <div class="agent-leg right"></div>
+      <div class="agent-body">
+        <div class="agent-eyes" id="msc-agent-eyes">
+          <div class="agent-eye" data-eye="left">
+            <div class="eye-open"></div>
+            <div class="eye-wink">
+              <svg viewBox="0 0 100 60" width="100%" height="100%" style="overflow:visible;">
+                <path d="M 5 50 Q 50 -15 95 50" fill="none" stroke="#121C2D" stroke-width="24" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="agent-eye" data-eye="right">
+            <div class="eye-open"></div>
+            <div class="eye-wink">
+              <svg viewBox="0 0 100 60" width="100%" height="100%" style="overflow:visible;">
+                <path d="M 5 50 Q 50 -15 95 50" fill="none" stroke="#121C2D" stroke-width="24" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  
+  
+  
+  </div>
+
+</div>
+<style>
+/* ── Mascot Widget ─────────────────────────────────── */
+#msc-wrap {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+#msc-char {
+  overflow: visible;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+  animation: msc-float 3s ease-in-out infinite;
+  transition: transform .15s;
+}
+#msc-char:active { transform: scale(.93); }
+@keyframes msc-float {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+
+
+  25%     { transform: rotate(-4deg); }
+  75%     { transform: rotate(4deg); }
+}
+
+
+  50%     { transform: scaleY(1.06); }
+}
+
+/* Thinking dots */
+#msc-dots {
+  display: none;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+.msc-state-thinking #msc-dots { display: flex; }
+#msc-dots span {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #6366f1;
+  animation: msc-dot-bounce .7s ease-in-out infinite;
+}
+#msc-dots span:nth-child(2) { animation-delay: .15s; }
+#msc-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes msc-dot-bounce {
+  0%,100% { transform: translateY(0); opacity:.5; }
+  50%     { transform: translateY(-6px); opacity:1; }
+}
+
+/* Greeting tooltip */
+#msc-greeting {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px 12px 4px 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  box-shadow: 0 4px 16px rgba(0,0,0,.1);
+  white-space: nowrap;
+  opacity: 0;
+  transform: scale(.85) translateY(6px);
+  transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none;
+}
+#msc-greeting.show {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Panel */
+#msc-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.14);
+  width: 310px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(12px) scale(.96);
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
+}
+#msc-panel.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.msc-ph {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg,#6366f1,#4f46e5);
+}
+.msc-ph-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,.2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.msc-ph-name { font-size: 13px; font-weight: 700; color: #fff; }
+.msc-ph-sub { font-size: 11px; color: rgba(255,255,255,.8); display:flex; align-items:center; gap:5px; margin-top:1px; }
+.msc-ph-dot { width:6px;height:6px;border-radius:50%;background:#4ade80;animation:msc-blink 1.4s ease-in-out infinite; }
+@keyframes msc-blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+.msc-ph-close { margin-left:auto; background:none; border:none; cursor:pointer; padding:4px; display:flex; opacity:.75; }
+.msc-ph-close:hover { opacity:1; }
+
+.msc-msgs {
+  flex:1; max-height:220px; overflow-y:auto;
+  padding: 14px 14px 8px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.msc-msg-ai, .msc-msg-user { display: flex; }
+.msc-msg-ai { justify-content: flex-start; }
+.msc-msg-user { justify-content: flex-end; }
+.msc-bubble {
+  max-width: 85%; padding: 9px 13px;
+  border-radius: 14px; font-size: 13px; line-height: 1.5;
+}
+.msc-msg-ai .msc-bubble { background:#f1f5f9; color:#0f172a; border-bottom-left-radius:4px; }
+.msc-msg-user .msc-bubble { background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; border-bottom-right-radius:4px; }
+
+.msc-quick-wrap {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 0 14px 10px;
+}
+.msc-quick-btn {
+  font-size:11.5px; font-weight:600; color:#6366f1;
+  background:#eff1fe; border:1px solid #c7d2fe;
+  border-radius:100px; padding:5px 11px;
+  cursor:pointer; font-family:inherit;
+  transition: background .15s;
+  white-space: nowrap;
+}
+.msc-quick-btn:hover { background:#e0e7ff; }
+
+.msc-input-row {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 12px; border-top:1px solid #f1f5f9;
+}
+.msc-input {
+  flex:1; border:1px solid #e2e8f0; border-radius:100px;
+  padding:8px 14px; font-size:13px; font-family:inherit;
+  outline:none; color:#0f172a;
+  transition: border-color .15s;
+}
+.msc-input:focus { border-color:#6366f1; }
+.msc-send-btn {
+  width:34px; height:34px; border-radius:50%;
+  background:linear-gradient(135deg,#6366f1,#4f46e5);
+  border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; transition:opacity .15s;
+}
+.msc-send-btn:hover { opacity:.85; }
+
+
+
+  40%  { transform: translateY(-8px) rotateY(180deg) scale(.85); }
+  100% { transform: translateY(0) rotateY(360deg) scale(1); }
+}
+
+
+
+
+
+/* ── LOBI/KUBI 3D Agent Widget (55 % scale) ─────────── */
+.agent-container {
+  position: relative;
+  overflow: visible;
+  width: 140px;
+  height: 158px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  cursor: pointer;
+  perspective: 700px;
+}
+
+@keyframes floatAgent {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+@keyframes floatShadow {
+  0%,100% { transform: scale(1);   opacity: .18; }
+  50%      { transform: scale(.8); opacity: .09; }
+}
+@keyframes waveLeft  { 0%,100%{transform:rotate(32deg);} 50%{transform:rotate(38deg);} }
+@keyframes waveRight { 0%,100%{transform:rotate(50deg);} 50%{transform:rotate(56deg);} }
+
+.agent-3d {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  animation: floatAgent 3.5s ease-in-out infinite;
+  z-index: 2;
+}
+
+/* Torque */
+.msc-state-idle.msc-spinning .agent-3d {
+  animation: agentTorque .8s cubic-bezier(.4,0,.2,1) !important;
+}
+
+  45%  { transform: rotateY(180deg) scale(.82); }
+  100% { transform: rotateY(360deg) scale(1); }
+}
+.msc-state-thinking .agent-3d {
+  animation: agentWobble .55s ease-in-out infinite !important;
+}
+@keyframes agentWobble {
+  0%,100%{transform:rotate(0);}
+  25%{transform:rotate(-6deg);}
+  75%{transform:rotate(6deg);}
+}
+.msc-state-talking .agent-3d {
+  animation: agentBounce .4s ease-in-out infinite !important;
+}
+@keyframes agentBounce {
+  0%,100%{transform:scaleY(1);}
+  50%{transform:scaleY(1.07);}
+}
+
+/* Floor shadow */
+.agent-floor-shadow {
+  position: absolute;
+  bottom: 22px;
+  width: 99px;
+  height: 13px;
+  background: #1e3a8a;
+  border-radius: 50%;
+  filter: blur(3px);
+  animation: floatShadow 3.5s ease-in-out infinite;
+  z-index: 1;
+}
+
+/* Body */
+.agent-body {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(150deg, #3a8bff 0%, #1f78ff 45%, #0c54d8 100%);
+  border-radius: 31px;
+  box-shadow:
+    inset 8px  9px 17px rgba(255,255,255,.35),
+    inset -10px -10px 20px rgba(0,30,120,.45),
+    inset 2px  2px  4px rgba(255,255,255,.85),
+    inset -2px -2px 4px rgba(0,20,80,.5),
+    0 10px 17px rgba(15,84,216,.28);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+.agent-body::before {
+  content: "";
+  position: absolute;
+  top: 6px; left: 10px;
+  width: 72px; height: 33px;
+  background: linear-gradient(160deg, rgba(255,255,255,.85), rgba(255,255,255,0));
+  border-radius: 50% 50% 60% 40% / 70% 60% 40% 30%;
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+/* Arms */
+.agent-arm {
+  position: absolute;
+  top: 51px;
+  width: 53px;
+  height: 21px;
+  background: linear-gradient(160deg, #3a8bff, #0f56d8);
+  border-radius: 999px;
+  z-index: 1;
+  box-shadow:
+    inset 3px 3px 7px rgba(255,255,255,.35),
+    inset -3px -3px 7px rgba(0,30,120,.45);
+}
+.agent-arm.left {
+  left: -40px;
+  transform-origin: right center;
+  transform: rotate(32deg);
+  animation: waveLeft 3.6s ease-in-out infinite;
+}
+.agent-arm.right {
+  right: -40px;
+  transform-origin: left center;
+  transform: rotate(50deg);
+  animation: waveRight 3.2s ease-in-out infinite;
+}
+
+/* Legs */
+.agent-leg {
+  position: absolute;
+  bottom: -23px;
+  width: 19px;
+  height: 39px;
+  background: linear-gradient(160deg, #3a8bff, #0f56d8);
+  border-radius: 40% 40% 50% 50% / 24% 24% 76% 76%;
+  z-index: 1;
+  box-shadow:
+    inset 3px 3px 6px rgba(255,255,255,.30),
+    inset -3px -3px 6px rgba(0,30,120,.45);
+}
+.agent-leg.left  { left: 28px;  transform: rotate(-8deg); }
+.agent-leg.right { right: 28px; transform: rotate(8deg); }
+
+/* Eyes */
+.agent-eyes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  margin-top: -6px;
+  transition: transform .12s ease-out;
+}
+.agent-eye {
+  position: relative;
+  width: 19px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.eye-open {
+  width: 19px;
+  height: 31px;
+  background: #121C2D;
+  border-radius: 50% / 55%;
+  position: relative;
+  transition: opacity .08s linear;
+}
+.eye-open::after {
+  content: "";
+  position: absolute;
+  top: 5px; left: 4px;
+  width: 5px; height: 5px;
+  background: rgba(120,150,210,.7);
+  border-radius: 50%;
+}
+.eye-wink {
+  position: absolute;
+  width: 28px;
+  height: 18px;
+  opacity: 0;
+  transition: opacity .08s linear;
+}
+.agent-eye.winking .eye-open { opacity: 0; }
+.agent-eye.winking .eye-wink { opacity: 1; }
+
+/* Thinking state — spinner eyes */
+.msc-state-thinking .eye-open {
+  background: transparent !important;
+  border: 3px solid #121C2D;
+  border-top-color: transparent;
+  border-radius: 50% !important;
+  width: 20px; height: 20px;
+  animation: agentSpinEye .6s linear infinite !important;
+}
+.msc-state-thinking .eye-wink { display: none !important; }
+@keyframes agentSpinEye { to { transform: rotate(360deg); } }
+
+
+/* Voice mode */
+#msc-voice-view { padding: 20px 16px 16px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+.voice-vis { position:relative; width:100px; height:100px; display:flex; align-items:center; justify-content:center; }
+.vring {
+  position:absolute; border-radius:50%;
+  border: 2px solid rgba(15,23,42,.15);
+  animation: vring-out 2.4s ease-out infinite;
+}
+.vring:nth-child(1){ width:60px;height:60px; animation-delay:0s; }
+.vring:nth-child(2){ width:60px;height:60px; animation-delay:.7s; }
+.vring:nth-child(3){ width:60px;height:60px; animation-delay:1.4s; }
+@keyframes vring-out { 0%{transform:scale(1);opacity:.7;} 100%{transform:scale(2.8);opacity:0;} }
+.voice-vis.listening .vring { border-color: rgba(15,23,42,.4); animation-duration: 1s; }
+
+.voice-face {
+  width:52px;height:52px; border-radius:14px;
+  background:linear-gradient(150deg,#3a8bff,#0c54d8);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  position:relative; z-index:2;
+  box-shadow: inset 3px 3px 8px rgba(255,255,255,.3), inset -3px -3px 8px rgba(0,30,120,.4);
+}
+.vface-eye.oval { width:9px;height:16px;background:#0f172a;border-radius:50%/55%; flex-shrink:0; }
+.vface-eye.wink { width:16px;height:10px;display:flex;align-items:center;flex-shrink:0;margin-top:-3px; }
+
+.voice-status { font-size:13px;font-weight:600;color:#0f172a;margin:0;text-align:center; }
+.voice-transcript { font-size:12px;color:#64748b;margin:0;text-align:center;min-height:16px;font-style:italic; }
+
+.voice-mic-btn {
+  display:flex;align-items:center;gap:8px;
+  background:#0f172a;color:#fff;
+  border:none;border-radius:100px;
+  padding:11px 22px;font-size:13.5px;font-weight:700;
+  cursor:pointer;font-family:inherit;
+  transition:opacity .15s;
+}
+.voice-mic-btn:hover { opacity:.85; }
+.voice-mic-btn.listening { background:#ef4444; animation: mic-pulse .8s ease-in-out infinite; }
+@keyframes mic-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4);} 50%{box-shadow:0 0 0 8px rgba(239,68,68,0);} }
+
+.voice-to-chat-btn { font-size:12px;color:#94a3b8;background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline; }
+.chat-to-voice-btn { font-size:12px;color:#94a3b8;background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;margin:4px auto 10px;display:block; }
+
+/* Dark theme overrides */
+.msc-ph { background: #0f172a !important; }
+.msc-msg-user .msc-bubble { background:#0f172a !important; }
+.msc-send-btn { background:#0f172a !important; }
+.msc-quick-btn { color:#0f172a !important; background:#f1f5f9 !important; border-color:#e2e8f0 !important; }
+.msc-chat-switch { background:none;border:none;cursor:pointer;padding:4px;display:flex;opacity:.8; }
+.msc-chat-switch:hover { opacity:1; }
+
+/* Pop-up from dot on load */
+@keyframes boxy-popup {
+  0%   { transform:scale(0) translateY(20px); opacity:0; }
+  70%  { transform:scale(1.08) translateY(-3px); opacity:1; }
+  100% { transform:scale(1) translateY(0); opacity:1; }
+}
+
+/* Tilt only — no full spin */
+.msc-state-idle.msc-spinning .agent-3d {
+  animation: agentTilt .9s ease-in-out !important;
+}
+@keyframes agentTilt {
+  0%   { transform:translateY(0) rotate(0deg); }
+  20%  { transform:translateY(-6px) rotate(-12deg); }
+  50%  { transform:translateY(-8px) rotate(14deg); }
+  80%  { transform:translateY(-4px) rotate(-8deg); }
+  100% { transform:translateY(0) rotate(0deg); }
+}
+
+</style>
+<script>
+(function() {
+  const aiReplies = {
+    'ako funguje ai screening?': 'The AI agent calls the candidate, runs a structured interview, and generates an evaluation in 10–15 min — no recruiter needed. 🤖',
+    'koľko to stojí?': 'Pricing depends on the number of roles and scope. See the Pricing section or email info@instaview.sk. 💬',
+    'chcem demo': 'Great! Go to the HR page where AI will call you live. Or contact us to schedule a demo. 🚀',
+  };
+
+  let panelOpen = false;
+  let state = 'idle';
+
+    function setState(s) {
+    state = s;
+    var wrap = document.getElementById('msc-wrap');
+    if (wrap) wrap.className = 'msc-state-' + s;
+  }
+
+  window.mscToggle = function() {
+    panelOpen ? mscClose() : mscOpen();
+  };
+
+  function mscOpen() {
+    panelOpen = true;
+    document.getElementById('msc-panel').classList.add('open');
+    document.getElementById('msc-greeting').classList.remove('show');
+    setState('talking');
+    setTimeout(() => setState('idle'), 1200);
+  }
+
+  window.mscClose = function() {
+    panelOpen = false;
+    document.getElementById('msc-panel').classList.remove('open');
+    setState('idle');
+  };
+
+  window.mscQuick = function(text) {
+    document.getElementById('msc-quick-wrap').style.display = 'none';
+    addMsg(text, 'user');
+    setState('thinking');
+    setTimeout(() => {
+      const reply = aiReplies[text.toLowerCase()] || 'Good question! Reach out at info@instaview.sk and we'll be happy to help. 😊';
+      addMsg(reply, 'ai');
+      setState('talking');
+      setTimeout(() => setState('idle'), 2000);
+    }, 1000);
+  };
+
+  window.mscSend = function(e) {
+    e.preventDefault();
+    const inp = document.getElementById('msc-input');
+    const val = inp.value.trim();
+    if (!val) return;
+    document.getElementById('msc-quick-wrap').style.display = 'none';
+    addMsg(val, 'user');
+    inp.value = '';
+    setState('thinking');
+    setTimeout(() => {
+      const key = val.toLowerCase();
+      const reply = aiReplies[key] || 'Thanks for your message! For more info reach out at info@instaview.sk. 😊';
+      addMsg(reply, 'ai');
+      setState('talking');
+      setTimeout(() => setState('idle'), 2000);
+    }, 1000);
+  };
+
+  function addMsg(text, who) {
+    const msgs = document.getElementById('msc-msgs');
+    const d = document.createElement('div');
+    d.className = 'msc-msg-' + who;
+    d.innerHTML = '<div class="msc-bubble">' + text + '</div>';
+    msgs.appendChild(d);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  // Greeting on load
+  setTimeout(() => {
+    const g = document.getElementById('msc-greeting');
+    if (g) {
+      g.classList.add('show');
+      g.onclick = mscOpen;
+      setTimeout(() => g.classList.remove('show'), 6000);
+    }
+  }, 1800);
+
+
+  // Periodic torque spin every 6s when idle
+  setInterval(function() {
+    var wrap = document.getElementById('msc-wrap');
+    if (wrap && wrap.className.indexOf('msc-state-idle') !== -1) {
+      wrap.classList.add('msc-spinning');
+      setTimeout(function() { wrap.classList.remove('msc-spinning'); }, 700);
+    }
+  }, 6000);
+
+
+  // ── Voice mode ────────────────────────────────────
+  var voiceActive = false;
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var recognition = SR ? new SR() : null;
+  if (recognition) {
+    recognition.lang = 'sk-SK';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.onstart = function() {
+      voiceActive = true;
+      document.getElementById('voice-status').textContent = 'Listening… speak now';
+      document.getElementById('voice-mic-btn').classList.add('listening');
+      document.getElementById('voice-mic-label').textContent = 'Stop';
+      document.querySelector('.voice-vis').classList.add('listening');
+    };
+    recognition.onresult = function(e) {
+      var t = '';
+      for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      document.getElementById('voice-transcript').textContent = t;
+    };
+    recognition.onend = function() {
+      voiceActive = false;
+      document.getElementById('voice-mic-btn').classList.remove('listening');
+      document.getElementById('voice-mic-label').textContent = 'Talk to Boxy';
+      document.querySelector('.voice-vis').classList.remove('listening');
+      var text = document.getElementById('voice-transcript').textContent.trim();
+      if (text) {
+        document.getElementById('voice-status').textContent = 'Boxy is replying…';
+        setState('thinking');
+        setTimeout(function() {
+          var reply = getAIReplyText(text.toLowerCase());
+          document.getElementById('voice-status').textContent = reply;
+          document.getElementById('voice-transcript').textContent = '';
+          setState('idle');
+          if (window.speechSynthesis) {
+            var u = new SpeechSynthesisUtterance(reply);
+            u.lang = 'sk-SK';
+            window.speechSynthesis.speak(u);
+          }
+        }, 900);
+      } else {
+        document.getElementById('voice-status').textContent = 'Click and talk to Boxy';
+      }
+    };
+    recognition.onerror = function() {
+      voiceActive = false;
+      document.getElementById('voice-mic-btn').classList.remove('listening');
+      document.getElementById('voice-mic-label').textContent = 'Talk to Boxy';
+      document.getElementById('voice-status').textContent = 'Try again or switch to chat';
+    };
+  }
+
+  function toggleVoice() {
+    if (!recognition) { switchToChat(); return; }
+    if (voiceActive) { recognition.stop(); } else { recognition.start(); }
+  }
+
+  function getAIReplyText(key) {
+    var r = {
+      'screening': 'The AI agent calls the candidate, conducts a structured interview, and delivers an evaluation in 10–15 minutes.',
+      'cen': 'Pricing depends on the number of roles. See the Pricing section or email info@instaview.sk.',
+      'demo': 'Great! Head to the HR page and AI will call you live. Or contact us at info@instaview.sk.',
+      'ahoj': 'Hey! I am Boxy, the AI agent from InstaView. I can help with hiring and HR automation questions.',
+    };
+    for (var k in r) { if (key.indexOf(k) !== -1) return r[k]; }
+    return 'Thanks for your question! For more info reach out at info@instaview.sk.';
+  }
+
+  function switchToChat() {
+    document.getElementById('msc-voice-view').style.display = 'none';
+    document.getElementById('msc-chat-view').style.display = 'flex';
+    document.getElementById('msc-chat-view').style.flexDirection = 'column';
+  }
+  function switchToVoice() {
+    document.getElementById('msc-chat-view').style.display = 'none';
+    document.getElementById('msc-voice-view').style.display = 'flex';
+  }
+
+  // ── Pop-up from dot on load ────────────────────────
+  (function() {
+    var char = document.getElementById('msc-char');
+    if (char) {
+      char.style.transform = 'scale(0)';
+      char.style.opacity = '0';
+      setTimeout(function() {
+        char.style.transition = 'none';
+        char.style.animation = 'boxy-popup .65s cubic-bezier(.34,1.56,.64,1) forwards';
+        char.style.transform = '';
+        char.style.opacity = '';
+        setTimeout(function() {
+          var g = document.getElementById('msc-greeting');
+          if (g) {
+            g.textContent = '💬 Can I help you?';
+            g.classList.add('show');
+            g.onclick = mscOpen;
+            setTimeout(function() { g.classList.remove('show'); }, 6000);
+          }
+        }, 700);
+      }, 1400);
+    }
+  })();
+
+
+  // Winking + mouse tracking for LOBI agent
+  (function() {
+    var leftEye  = document.querySelector('#msc-char [data-eye="left"]');
+    var rightEye = document.querySelector('#msc-char [data-eye="right"]');
+    var agentEl  = document.getElementById('msc-agent');
+    var eyesEl   = document.getElementById('msc-agent-eyes');
+
+    function wink(eye, dur) {
+      if (!eye) return;
+      eye.classList.add('winking');
+      setTimeout(function(){ eye.classList.remove('winking'); }, dur || 220);
+    }
+
+    // Auto-wink every ~4 s
+    setInterval(function() {
+      if (Math.random() < 0.3) { wink(leftEye, 160); wink(rightEye, 160); }
+      else { wink(rightEye); }
+    }, 3800);
+
+    // Click wink
+    if (agentEl) agentEl.addEventListener('click', function(e){ e.stopPropagation(); wink(rightEye); mscToggle(); });
+
+    // Mouse tracking (eyes only, subtle)
+    var tx = 0, ty = 0, cx = 0, cy = 0;
+    document.addEventListener('pointermove', function(e) {
+      tx = (e.clientX / window.innerWidth  - 0.5) * 2;
+      ty = (e.clientY / window.innerHeight - 0.5) * 2;
+    });
+    (function loop() {
+      cx += (tx - cx) * 0.08;
+      cy += (ty - cy) * 0.08;
+      if (eyesEl) eyesEl.style.transform = "translate(" + (cx*2) + "px," + (cy*1.5) + "px)";
+      requestAnimationFrame(loop);
+    })();
+  })();
+
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('msc-wrap');
+    if (wrap && !wrap.contains(e.target) && panelOpen) mscClose();
+  });
+})();
+</script>
+</body>
+</html>

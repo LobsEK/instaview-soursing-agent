@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InstaView · Scénár editor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: { extend: {
+        colors: { border:"hsl(240 5.9% 90%)", background:"hsl(240 4.8% 95.9%)", foreground:"hsl(240 10% 3.9%)", card:"hsl(0 0% 100%)", muted:"hsl(240 4.8% 95.9%)", "muted-foreground":"hsl(240 5% 28%)" },
+        borderRadius: { sm:"calc(0.625rem - 4px)", md:"calc(0.625rem - 2px)", lg:"0.625rem", xl:"calc(0.625rem + 4px)" },
+      } },
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { background:#fff; }
+    #view-other { background:#f4f4f7; }
+    #view-other .sec-card { background:#fff; border:1px solid #e8e8ef; border-radius:10px; box-shadow:0 1px 2px rgba(15,15,25,.03); }
+    #view-other .bd-blue   { border-color:#c7d7f5; }
+    #view-other .bd-indigo { border:1.5px solid #b9bff0; box-shadow:0 2px 10px rgba(79,70,229,.06); }
+    #view-other .bd-teal   { border-color:#bfe6e0; }
+    #view-other .bd-amber  { border-color:#f2ddb3; }
+    #view-other .bd-rose   { border-color:#f2c7cf; }
+    #view-other .sub-card { background:#fff; border:1px solid #ececf3; border-radius:8px; }
+    #view-other .analytics-wrap > * + * { margin-top:24px; }
+    #view-other .sec-inner-gap > * + * { margin-top:14px; }
+    .canvas{ background-color:#fafafc; background-image:radial-gradient(circle,#dcdce2 1px,transparent 1px); background-size:22px 22px; }
+    .fnode{ width:250px; background:#fff; border:1px solid #e6e6ee; border-radius:13px; box-shadow:0 1px 3px rgba(0,0,0,.06); padding:13px 15px; cursor:pointer; display:flex; gap:11px; align-items:flex-start; transition:border-color .15s, box-shadow .15s; }
+    .fnode:hover{ border-color:#b9c4e6; }
+    .fnode.sel{ border-color:#003AB8; box-shadow:0 0 0 2px rgba(0,58,184,.22); }
+    .fnode .ic{ width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none;margin-top:1px; }
+    .fnode .tt{ font-size:13.5px;font-weight:700;color:#15151c; }
+    .fnode .sub{ font-size:11.5px;color:#8a8a93;margin-top:2px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden; }
+    .fconn{ width:1.5px;height:36px;background:#d5d5dd;position:relative;display:flex;align-items:center;justify-content:center; }
+    .fconn .add{ width:26px;height:26px;border-radius:50%;background:#fff;border:1px solid #d0d0d8;color:#8a8a93;display:grid;place-items:center;cursor:pointer; }
+    .fconn .add:hover{ border-color:#003AB8;color:#003AB8; }
+    .bstep{ display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:11px;cursor:pointer;transition:background .12s; }
+    .bstep:hover{ background:hsl(240 4.8% 96.5%); }
+    .bstep .ic{ width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none; }
+    .zoombtn{ width:34px;height:30px;border:0;background:#fff;display:grid;place-items:center;color:#5f6368;cursor:pointer; }
+    .zoombtn:hover{ background:hsl(240 4.8% 95.9%); }
+    .addpop{ position:absolute;z-index:20;width:280px;background:#fff;border:1px solid #e6e6ee;border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.16);padding:8px; }
+    .addpop-h{ display:flex;align-items:center;justify-content:space-between;padding:6px 8px 8px;font-size:12px;font-weight:700;color:#7a7a82; }
+    .addpop .opt{ display:flex;gap:11px;align-items:flex-start;padding:10px;border-radius:10px;cursor:pointer; }
+    .addpop .opt:hover{ background:hsl(240 4.8% 96.5%); }
+    .addpop .opt .ic{ width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none;margin-top:1px; }
+    .addpop .opt .tt{ font-size:13px;font-weight:700;color:#15151c; }
+    .addpop .opt .ds{ font-size:11.5px;color:#8a8a93;line-height:1.4;margin-top:2px; }
+    .broutes{ display:flex;gap:18px;align-items:flex-start; }
+    .broute{ display:flex;flex-direction:column;align-items:center;gap:8px; }
+    .brlbl{ font-size:11px;font-weight:700;color:#5f6368; }
+    .braddstep{ font-size:11.5px;font-weight:600;color:#003AB8;border:1px dashed #b9c4e6;border-radius:9px;padding:7px 12px;background:#fff;cursor:pointer;white-space:nowrap; }
+    .braddstep:hover{ background:rgba(0,58,184,.04); }
+    .cvar{ display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#003AB8;background:rgba(0,58,184,.06);border:1px solid rgba(0,58,184,.15);border-radius:7px;padding:5px 10px;cursor:pointer;font-family:ui-monospace,monospace; }
+    .cvar:hover{ background:rgba(0,58,184,.1); }
+    .switch{ position:relative;display:inline-flex;height:1.4rem;width:2.5rem;flex:none;cursor:pointer;align-items:center; }
+    .switch input{ position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer; }
+    .switch .track{ height:1.4rem;width:2.5rem;border-radius:9999px;background:#d1d5db;transition:background .2s; }
+    .switch .thumb{ position:absolute;left:3px;height:1.05rem;width:1.05rem;border-radius:9999px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .2s; }
+    .switch input:checked + .track{ background:#22c55e; }
+    .switch input:checked ~ .thumb{ transform:translateX(1.1rem); }
+    .seg{ display:inline-flex;border:1px solid #d5d5de;border-radius:6px;overflow:hidden; }
+    .seg button{ padding:5px 12px;font-size:12px;font-weight:600;background:#fff;color:#334155;border:0;cursor:pointer;transition:background .15s,color .15s; }
+    .seg button.on-req{ background:#003AB8;color:#fff; }
+    .seg button.on-pref{ background:#f4f4f7;color:#0f172a;box-shadow:inset 0 0 0 1px #cbd5e1; }
+    #view-other button{ transition:transform .12s ease, box-shadow .15s ease, background-color .15s ease, color .15s ease, border-color .15s ease; }
+    #view-other button:hover{ box-shadow:0 1px 3px rgba(15,15,25,.08); }
+    #view-other button:active{ transform:scale(.96); }
+    #view-other button.is-open{ background:#eef2ff; border-color:#c7d2fe; color:#003AB8; box-shadow:inset 0 0 0 1px #c7d2fe; }
+    .seg button{ transition:background .15s, color .15s, box-shadow .15s !important; }
+    .seg button:active{ transform:scale(.97); }
+    .switch .thumb{ transition:transform .22s cubic-bezier(.4,.0,.2,1) !important; }
+    .switch .track{ transition:background .22s ease !important; }
+    .chip{ display:inline-flex;align-items:center;gap:4px;padding:5px 10px;font-size:12px;font-weight:600;border-radius:9999px;border:1px solid;cursor:pointer;transition:transform .12s ease,box-shadow .15s ease,background-color .15s ease !important; }
+    .chip:hover{ transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,.1) !important; }
+    .chip:active{ transform:scale(.94) !important; }
+    @keyframes pulse-add{ 0%{ transform:scale(1) } 40%{ transform:scale(1.15) } 100%{ transform:scale(1) } }
+    .chip.pulsed{ animation:pulse-add .35s ease; }
+    .chip.c0{ background:#dbeafe;border-color:#93c5fd;color:#1d4ed8; }
+    .chip.c1{ background:#dcfce7;border-color:#86efac;color:#15803d; }
+    .chip.c2{ background:#f3e8ff;border-color:#c4b5fd;color:#6d28d9; }
+    .chip.c3{ background:#fce7f3;border-color:#f9a8d4;color:#be185d; }
+    .chip.c4{ background:#ffedd5;border-color:#fdba74;color:#c2410c; }
+    .chip.c5{ background:#fef9c3;border-color:#fde047;color:#a16207; }
+    .chip.c6{ background:#ccfbf1;border-color:#5eead4;color:#0f766e; }
+    .chip.c7{ background:#ffe4e6;border-color:#fda4af;color:#be123c; }
+    .hl{ display:inline-flex;position:relative;padding:2px 10px;border-radius:9999px;font-weight:700; }
+    .hl::after{ content:"";position:absolute;top:-3px;right:-3px;width:7px;height:7px;border-radius:9999px;background:rgba(255,255,255,.7); }
+    .hl.blue{ background:#dbeafe;color:#2563eb; }
+    .hl.orange{ background:#ffedd5;color:#ea580c; }
+    .hl.pink{ background:#fae8ff;color:#c026d3; }
+    .hl.green{ background:#dcfce7;color:#16a34a; }
+    .hl.yellow{ background:#fef9c3;color:#a16207; }
+    .info-card{ width:100%;display:flex;flex-direction:column;background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(15,15,25,.03);overflow:hidden;border:1px solid #e8e8ef;font-size:13px; }
+    .info-card > .info-illu{ min-height:0; }
+    .info-card .p-5{ padding:16px; }
+    .info-card h4{ font-size:15px; }
+    .info-card .text-sm{ font-size:12.5px; }
+    .info-card .leading-6{ line-height:1.45; }
+    .info-card .leading-8{ line-height:1.9; }
+    .info-card > .info-body{ flex:none; }
+    @keyframes info-pop{ from{ opacity:0;transform:translateY(6px) scale(.98) } to{ opacity:1;transform:translateY(0) scale(1) } }
+    .info-card{ animation:info-pop .18s ease; }
+    .info-btn{ display:inline-flex;height:22px;width:22px;align-items:center;justify-content:center;border-radius:9999px;color:#9497a3;border:1px solid #dcdce4;cursor:pointer;flex:none;transition:background .15s,color .15s,border-color .15s; }
+    .info-btn:hover{ background:#eef2ff;color:#003AB8;border-color:#c7d2fe; }
+    .wave{ display:inline-flex;align-items:center;gap:3px;height:16px; }
+    .wave span{ width:2.5px;border-radius:2px;background:currentColor;display:inline-block;animation:wave-bounce 1s ease-in-out infinite; }
+    .wave span:nth-child(1){ height:35%;animation-delay:0s }
+    .wave span:nth-child(2){ height:65%;animation-delay:.12s }
+    .wave span:nth-child(3){ height:100%;animation-delay:.24s }
+    .wave span:nth-child(4){ height:55%;animation-delay:.36s }
+    .wave span:nth-child(5){ height:80%;animation-delay:.48s }
+    @keyframes wave-bounce{ 0%,100%{ transform:scaleY(.35) } 50%{ transform:scaleY(1) } }
+    .voice-avatar{ background:radial-gradient(circle at 35% 30%, #fed7aa, #f97316 70%); }
+    .voice-ring{ position:absolute;inset:0;border-radius:9999px;border:2px solid rgba(249,115,22,.5);animation:voice-ring 1.8s ease-out infinite; }
+    .voice-ring.d2{ animation-delay:.6s } .voice-ring.d3{ animation-delay:1.2s }
+    @keyframes voice-ring{ 0%{ transform:scale(1);opacity:.7 } 100%{ transform:scale(1.7);opacity:0 } }
+    .paused .voice-ring{ animation-play-state:paused;opacity:0 }
+    .paused .wave span{ animation-play-state:paused }
+    .vbtn{ display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s,border-color .15s; }
+    .chat-msg{ animation:info-pop .25s ease; }
+  </style>
+</head>
+<body class="text-foreground">
+  <div class="flex h-screen overflow-hidden bg-background text-foreground">
+    <!-- Sidebar -->
+    <aside class="flex w-64 shrink-0 flex-col border-r border-border bg-card">
+      <div class="flex items-center justify-between px-5 py-4">
+        <div class="flex items-center gap-2"><i data-lucide="users" class="h-6 w-6 text-[#003AB8]"></i><span class="text-xl font-bold text-[#003AB8]">instaview</span></div>
+        <i data-lucide="panel-left-close" class="h-5 w-5 text-muted-foreground"></i>
+      </div>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <div class="px-4 py-3">
+        <p class="mb-1 text-xs text-muted-foreground">Aktuálna firma</p>
+        <button class="flex w-full items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm"><span class="flex items-center gap-2"><span class="flex h-6 w-6 items-center justify-center rounded bg-[#003AB8]/20 text-xs font-semibold text-[#003AB8]">TE</span>Testovanie 2</span><i data-lucide="chevrons-up-down" class="h-4 w-4 text-muted-foreground"></i></button>
+      </div>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <div class="px-4 py-4">
+        <div class="flex items-center justify-between rounded-lg border border-[#003AB8]/30 bg-[#003AB8]/10 px-3 py-2.5">
+          <div class="flex items-center gap-2"><i data-lucide="sparkles" class="h-4 w-4 text-[#003AB8]"></i><div class="leading-tight"><p class="text-xs text-muted-foreground">AI kredity</p><p class="text-sm font-semibold">188.48</p></div></div>
+          <span class="rounded-md bg-[#003AB8] px-2.5 py-0.5 text-xs font-semibold text-white">Kúpiť</span>
+        </div>
+      </div>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <nav class="flex-1 space-y-1 px-3 py-3" id="mainNav"></nav>
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+      <div class="space-y-1 px-3 py-3" id="bottomNav"></div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex flex-1 flex-col overflow-hidden">
+      <!-- top bar -->
+      <div class="flex items-center gap-3 border-b border-border bg-card px-6 py-3">
+        <input id="agentName" placeholder="Názov agenta" class="w-64 rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" />
+        <span class="rounded-md bg-muted px-3 py-1.5 text-sm font-medium text-muted-foreground">Telefón</span>
+        <div class="ml-auto flex items-center gap-2">
+          <button class="flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm hover:bg-muted"><i data-lucide="phone" class="h-4 w-4"></i> Vyskúšať</button>
+          <button onclick="location.href='agents-preview.html'" class="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm hover:bg-muted">Zrušiť</button>
+          <button class="rounded-md bg-[#003AB8] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#002a85]">Vytvoriť Agenta</button>
+        </div>
+      </div>
+
+      <!-- tabs -->
+      <div class="flex items-center gap-1 border-b border-border bg-card px-6 py-2" id="tabs"></div>
+
+      <!-- editor split -->
+      <div class="flex flex-1 overflow-hidden" id="view-scenar">
+        <!-- canvas -->
+        <div class="relative flex-1 overflow-hidden">
+          <div id="canvas" class="canvas absolute inset-0 overflow-auto">
+            <div class="flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-sm" style="position:absolute;top:16px;left:16px;z-index:5">
+              <button class="zoombtn" title="Späť"><i data-lucide="undo-2" class="h-4 w-4"></i></button>
+              <span class="h-5 w-px bg-border"></span>
+              <button class="zoombtn" title="Znovu"><i data-lucide="redo-2" class="h-4 w-4"></i></button>
+            </div>
+            <div id="flowInner" style="min-width:700px;min-height:640px;position:relative">
+              <div id="flow" class="flex flex-col items-center" style="padding:56px 0"></div>
+            </div>
+          </div>
+          <div class="flex flex-col rounded-lg border border-border bg-card shadow-sm" style="position:absolute;bottom:16px;left:16px;z-index:5">
+            <button class="zoombtn" id="zIn"><i data-lucide="plus" class="h-4 w-4"></i></button>
+            <button class="zoombtn border-t border-border" id="zOut"><i data-lucide="minus" class="h-4 w-4"></i></button>
+            <button class="zoombtn border-t border-border" id="zFit"><i data-lucide="maximize" class="h-4 w-4"></i></button>
+          </div>
+        </div>
+
+        <!-- right panel -->
+        <aside class="w-[360px] shrink-0 overflow-y-auto border-l border-border bg-card px-5 py-6" id="rightPanel"></aside>
+      </div>
+
+      <!-- other tabs (Kontext, Hlas, …) -->
+      <div class="hidden flex-1 overflow-y-auto" id="view-other"></div>
+    </main>
+  </div>
+
+  <script>
+    const navItems = [
+      { label:"Prehľad", icon:"layout-grid", href:"dashboard-preview.html" },
+      { label:"Pohovory", icon:"message-square" },
+      { label:"Pracovné pozície", icon:"briefcase" },
+      { label:"Kandidáti", icon:"clipboard-list" },
+      { label:"Vyhľadávanie talentov", icon:"search", href:"instaview-sourcing-agent.html" },
+      { label:"Agenti", icon:"bot", href:"agents-preview.html", active:true },
+      { label:"Design agent", icon:"sparkles", href:"design-agent.html" },
+    ];
+    const bottomNav = [
+      { label:"Fakturácia a spotreba", icon:"credit-card" },
+      { label:"Nastavenia", icon:"settings" },
+      { label:"Podpora", icon:"help-circle" },
+    ];
+    document.getElementById("mainNav").innerHTML = navItems.map(i => {
+      const cls = `flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${i.active ? "bg-[#003AB8]/15 text-[#003AB8]" : "text-foreground hover:bg-muted"}`;
+      const inner = `<i data-lucide="${i.icon}" class="h-4 w-4"></i>${i.label}`;
+      return i.href ? `<a href="${i.href}" class="${cls}">${inner}</a>` : `<button class="${cls}">${inner}</button>`;
+    }).join("");
+    document.getElementById("bottomNav").innerHTML = bottomNav.map(i => `<button class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><i data-lucide="${i.icon}" class="h-4 w-4"></i>${i.label}</button>`).join("");
+
+    // ---------- tabs ----------
+    const tabs = [
+      { id:"scenar", label:"Scénár", icon:"git-branch" },
+      { id:"kontext", label:"Kontext", icon:"brain" },
+      { id:"analytika", label:"Vyhodnotenie hovoru", icon:"bar-chart-3" },
+    ];
+    const tabsRight = [
+      { id:"hlas", label:"Hlas", icon:"volume-2" },
+      { id:"nastavenia", label:"Nastavenia", icon:"settings" },
+      { id:"integracie", label:"Integrácie", icon:"blocks" },
+    ];
+    let activeTab = "scenar";
+    function renderTabs(){
+      const btn = (t) => `<button onclick="setTab('${t.id}')" class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab===t.id ? 'bg-foreground text-white' : 'text-muted-foreground hover:bg-muted'}"><i data-lucide="${t.icon}" class="h-4 w-4"></i>${t.label}</button>`;
+      document.getElementById("tabs").innerHTML =
+        tabs.map(btn).join("") + `<div class="ml-auto flex items-center gap-1">` + tabsRight.map(btn).join("") + `</div>`;
+      lucide.createIcons();
+    }
+    function setTab(id){
+      activeTab = id; renderTabs();
+      const isScenar = id === "scenar";
+      document.getElementById("view-scenar").classList.toggle("hidden", !isScenar);
+      const other = document.getElementById("view-other");
+      other.classList.toggle("hidden", isScenar);
+      if (!isScenar) other.innerHTML = tabContent(id);
+      lucide.createIcons();
+    }
+    function tabContent(id){
+      if (id === "kontext") return kontextHTML();
+      if (id === "hlas") return hlasHTML();
+      if (id === "analytika") return analytikaHTML();
+      if (id === "nastavenia") return nastaveniaHTML();
+      if (id === "integracie") return integracieHTML();
+      return `<div class="mx-auto max-w-3xl px-8 py-14 text-center text-muted-foreground"><p class="text-lg font-semibold text-foreground">${id}</p><p class="mt-2 text-sm">Táto sekcia je pripravená na doplnenie.</p></div>`;
+    }
+    function sectionHeader(icon, title, desc, variant){
+      const big = variant === true || variant === "big";
+      const small = variant === "small";
+      const iconBox = big ? "h-11 w-11 rounded-xl" : small ? "h-8 w-8 rounded-md" : "h-9 w-9 rounded-lg";
+      const iconSz = big ? "h-6 w-6" : small ? "h-4 w-4" : "h-5 w-5";
+      const titleCls = big ? "text-lg font-bold" : small ? "text-sm font-bold" : "text-base font-bold";
+      const descCls = big ? "text-sm text-muted-foreground" : small ? "text-xs text-muted-foreground" : "text-sm text-muted-foreground";
+      return `<div class="flex items-start gap-3">
+        <span class="flex ${iconBox} items-center justify-center bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="${icon}" class="${iconSz}"></i></span>
+        <div><h3 class="${titleCls}">${title}</h3><p class="${descCls}">${desc}</p></div>
+      </div>`;
+    }
+    function saveRow(title, desc, on=true){
+      return `<div class="flex items-center justify-between gap-6">
+        <div><p class="text-sm font-semibold">${title}</p><p class="text-xs text-muted-foreground">${desc}</p></div>
+        <span class="switch"><input type="checkbox" ${on?'checked':''}><span class="track"></span><span class="thumb"></span></span>
+      </div>`;
+    }
+    function comingSoonRow(title, desc){
+      return `<div class="flex items-center justify-between rounded-md border border-dashed border-border px-4 py-4 opacity-70">
+        <div><p class="text-sm font-semibold">${title}</p><p class="text-xs text-muted-foreground">${desc}</p></div>
+        <span class="flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"><i data-lucide="lock" class="h-3 w-3"></i> Čoskoro</span>
+      </div>`;
+    }
+
+    // ---------- analytika (Vyhodnotenie hovoru) state ----------
+    const FIELD_TYPES = ["Text","Číslo","Áno/Nie","Výber (jedna z možností)"];
+    const FREQUENT_FIELDS = [
+      { group:"Kontakt a všeobecné", items:["Celé meno","E-mail","Telefónne číslo","Spoločnosť","Názov pozície","Lokalita","Preferovaný jazyk","Sentiment"] },
+      { group:"Nábor / HR",          items:["Roky praxe","Najvyššie vzdelanie","Kľúčové zručnosti","Výpovedná lehota","Platové očakávanie","Ochota sťahovať sa"] },
+      { group:"Predaj a oslovenie",  items:["Rozpočet","Časový plán rozhodnutia","Osoba s rozhodovacou právomocou","Úroveň záujmu","Aktuálne riešenie","Veľkosť spoločnosti","Problémy (pain points)"] },
+      { group:"Zákaznícka podpora a CX", items:["Kategória problému","Problém vyriešený","Naliehavosť","Produkt / oblasť","Vyžaduje následný kontakt"] },
+    ];
+    const analytics = {
+      fields: [], criteria: [], outcomes: [], tags: [],
+      frequentOpen: false,
+      enabledQ: new Set(),
+      qMeta: {},
+      critInfoOpen: true,
+      critVoiceOpen: false,
+      outInfoOpen: true,
+      outVoiceOpen: false,
+      recInfoOpen: true,
+      recVoiceOpen: false,
+      voiceMuted: false,
+      save: { record:true, transcript:true, summary:true, qa:true, scoring:true, sentiment:true },
+    };
+    window.a_toggleMute = ev => { if (ev) ev.stopPropagation(); analytics.voiceMuted = !analytics.voiceMuted; refreshAnalytika(); };
+    function voiceAgentCard(subtitle, closeFn, msgs){
+      const muted = analytics.voiceMuted;
+      return `<div class="info-card ${muted?'paused':''}">
+        <div class="info-body p-5" style="background:#17171c">
+          <div class="flex items-center justify-between">
+            <span class="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/90">${muted?`<i data-lucide="pause" class="h-3 w-3"></i> Pozastavené`:`<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400"></span> Hovorí`}</span>
+            <span class="wave text-white/70"><span></span><span></span><span></span><span></span><span></span></span>
+          </div>
+          <div class="mt-5 flex flex-col items-center text-center">
+            <div class="relative flex h-20 w-20 items-center justify-center">
+              <span class="voice-ring"></span><span class="voice-ring d2"></span><span class="voice-ring d3"></span>
+              <span class="voice-avatar relative flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg"><i data-lucide="sparkles" class="h-6 w-6"></i></span>
+            </div>
+            <p class="mt-3 text-sm font-semibold text-white">Instaview AI · Sprievodca</p>
+            <p class="text-xs text-white/50">${subtitle}</p>
+          </div>
+          <div class="mt-5 grid grid-cols-2 gap-2">
+            <button onclick="a_toggleMute(event)" class="vbtn ${muted?'bg-white/10 text-white':'bg-white text-[#17171c]'}">${muted?`<i data-lucide="mic-off" class="h-4 w-4"></i> Zapnúť`:`<i data-lucide="mic" class="h-4 w-4"></i> Stlmiť`}</button>
+            <button onclick="${closeFn}(event)" class="vbtn bg-white/10 text-white hover:bg-white/20"><i data-lucide="square" class="h-3.5 w-3.5"></i> Ukončiť</button>
+          </div>
+        </div>
+        <div class="info-illu flex flex-col overflow-hidden p-4" style="background:#fafafc">
+          <p class="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground"><i data-lucide="captions" class="h-3.5 w-3.5"></i> Prepis</p>
+          <div class="flex-1 space-y-2 overflow-y-auto" style="max-height:260px">
+            ${msgs.map(m => `<div class="chat-msg flex gap-2">
+              <span class="voice-avatar mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white"><i data-lucide="sparkles" class="h-3 w-3"></i></span>
+              <div class="rounded-2xl rounded-tl-sm bg-white border border-border px-3 py-2 text-sm leading-6 text-foreground">${m}</div>
+            </div>`).join("")}
+          </div>
+          <p class="mt-3 text-center text-[11px] text-muted-foreground">${muted?'Prehrávanie je pozastavené':'AI ti to práve vysvetľuje nahlas'}</p>
+        </div>
+      </div>`;
+    }
+    window.a_toggleQ = key => { if (analytics.enabledQ.has(key)) analytics.enabledQ.delete(key); else analytics.enabledQ.add(key); refreshAnalytika(); };
+    window.a_toggleCritInfo = ev => { if (ev) ev.stopPropagation(); analytics.critInfoOpen = !analytics.critInfoOpen; analytics.critVoiceOpen = false; refreshAnalytika(); };
+    window.a_openCritVoice = ev => { if (ev) ev.stopPropagation(); analytics.critVoiceOpen = true; refreshAnalytika(); };
+    window.a_closeCritVoice = ev => { if (ev) ev.stopPropagation(); analytics.critVoiceOpen = false; analytics.critInfoOpen = false; refreshAnalytika(); };
+    window.a_toggleOutInfo = ev => { if (ev) ev.stopPropagation(); analytics.outInfoOpen = !analytics.outInfoOpen; analytics.outVoiceOpen = false; refreshAnalytika(); };
+    window.a_openOutVoice = ev => { if (ev) ev.stopPropagation(); analytics.outVoiceOpen = true; refreshAnalytika(); };
+    window.a_closeOutVoice = ev => { if (ev) ev.stopPropagation(); analytics.outVoiceOpen = false; analytics.outInfoOpen = false; refreshAnalytika(); };
+    window.a_toggleRecInfo = ev => { if (ev) ev.stopPropagation(); analytics.recInfoOpen = !analytics.recInfoOpen; analytics.recVoiceOpen = false; refreshAnalytika(); };
+    window.a_openRecVoice = ev => { if (ev) ev.stopPropagation(); analytics.recVoiceOpen = true; refreshAnalytika(); };
+    window.a_closeRecVoice = ev => { if (ev) ev.stopPropagation(); analytics.recVoiceOpen = false; analytics.recInfoOpen = false; refreshAnalytika(); };
+    function guideBtn(open, toggleFn){
+      if (open) return "";
+      return `<button onclick="${toggleFn}(event)" class="absolute right-5 top-5 flex items-center gap-1.5 rounded-md border border-border bg-white px-2.5 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm hover:text-[#003AB8] hover:border-[#003AB8]"><i data-lucide="sparkles" class="h-3.5 w-3.5"></i> Sprievodca</button>`;
+    }
+    function recInfoCard(){
+      const row = (label, val, valCls) => `<div class="flex items-center justify-between rounded-md border border-border bg-white px-3 py-2">
+        <span class="text-xs font-medium text-muted-foreground">${label}</span>
+        <span class="rounded-md px-2 py-0.5 text-xs font-semibold ${valCls}">${val}</span>
+      </div>`;
+      return `<div class="info-card">
+        <div class="info-illu flex items-center justify-center" style="background:#fafafc">
+          <div class="w-full space-y-2 px-5 py-6">
+            ${row("Roky praxe", "5+", "bg-blue-100 text-blue-700")}
+            ${row("Vzdelanie", "VŠ – IT", "bg-purple-100 text-purple-700")}
+            ${row("Jazyky", "SK, EN", "bg-teal-100 text-teal-700")}
+            ${row("Seniorita", "Senior", "bg-amber-100 text-amber-700")}
+          </div>
+        </div>
+        <div class="info-body border-t border-border p-5">
+          <h4 class="mb-3 text-lg font-bold">Čo AI zaznamenáva</h4>
+          <p class="text-sm leading-7 text-muted-foreground">AI z každého hovoru sama vytiahne údaje o kandidátovi, napríklad roky praxe či jazyky. Nemusíš prepočúvať nahrávku.</p>
+          <div class="mt-4 flex items-center gap-2">
+            <button onclick="a_toggleRecInfo()" class="flex-1 rounded-md border border-border py-2 text-sm font-semibold hover:bg-muted">Dismiss</button>
+            <button onclick="a_openRecVoice(event)" class="flex flex-1 items-center justify-center gap-2 rounded-md bg-green-600 py-2 text-sm font-semibold text-white hover:bg-green-700"><i data-lucide="audio-waveform" class="h-4 w-4"></i> Learn more</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    function recVoiceCard(){
+      return voiceAgentCard("Čo AI zaznamenáva", "a_closeRecVoice", [
+        "Pole je údaj, ktorý chcem z každého hovoru. Napríklad roky praxe alebo jazyky.",
+        "AI ho počas hovoru sama zistí a vyplní za teba.",
+      ]);
+    }
+    function outInfoCard(){
+      return `<div class="info-card">
+        <div class="info-illu flex items-center justify-center" style="background:#fafafc">
+          <div class="relative overflow-hidden" style="width:100%;height:138px">
+            <span class="hl blue" style="position:absolute;left:14px;top:12px">Spravil si rezerváciu.</span>
+            <span class="hl orange" style="position:absolute;left:50px;top:50px">Prepojený na kolegu</span>
+            <span class="hl yellow" style="position:absolute;left:14px;top:88px">má záujem o prácu</span>
+            <span class="hl green" style="position:absolute;right:14px;top:110px">Prijatý</span>
+          </div>
+        </div>
+        <div class="info-body border-t border-border p-5">
+          <h4 class="mb-3 text-lg font-bold">Štítky</h4>
+          <p class="text-sm leading-7 text-muted-foreground">AI po hovore sama pridá štítok podľa toho, ako dopadol. Napríklad keď kandidát prejde, označí ho do druhého kola.</p>
+          <div class="mt-4 flex items-center gap-2">
+            <button onclick="a_toggleOutInfo()" class="flex-1 rounded-md border border-border py-2 text-sm font-semibold hover:bg-muted">Dismiss</button>
+            <button onclick="a_openOutVoice(event)" class="flex flex-1 items-center justify-center gap-2 rounded-md bg-green-600 py-2 text-sm font-semibold text-white hover:bg-green-700"><i data-lucide="audio-waveform" class="h-4 w-4"></i> Learn more</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    function outVoiceCard(){
+      return voiceAgentCard("Výsledky a štítky", "a_closeOutVoice", [
+        "Výsledok hovorí, kedy je hovor úspešný. Napríklad keď si kandidát dohodne schôdzku.",
+        "Štítok je značka, ktorú AI pridá sama. Napríklad keď treba zavolať neskôr.",
+      ]);
+    }
+    function critInfoCard(){
+      return `<div class="info-card">
+        <div class="info-illu flex items-center justify-center">
+          <div class="relative" style="width:100%;height:140px">
+            <svg class="absolute inset-0" width="100%" height="100%" viewBox="0 0 320 140" preserveAspectRatio="none">
+              <path d="M78,30 C170,30 170,70 246,70" stroke="#dcdce4" stroke-width="1.5" fill="none"/>
+              <path d="M78,70 C170,70 170,70 246,70" stroke="#dcdce4" stroke-width="1.5" fill="none"/>
+              <path d="M78,110 C170,110 170,70 246,70" stroke="#dcdce4" stroke-width="1.5" fill="none"/>
+            </svg>
+            <div class="absolute flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-white text-foreground" style="left:24px;top:10px"><i data-lucide="file-text" class="h-5 w-5"></i></div>
+            <div class="absolute flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-white text-foreground" style="left:24px;top:50px"><i data-lucide="list" class="h-5 w-5"></i></div>
+            <div class="absolute flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-white text-foreground" style="left:24px;top:90px"><i data-lucide="help-circle" class="h-5 w-5"></i></div>
+            <div class="absolute flex items-center justify-center rounded-full bg-green-500 text-white shadow-md" style="left:222px;top:48px;height:52px;width:52px"><i data-lucide="bar-chart-3" class="h-6 w-6"></i></div>
+          </div>
+        </div>
+        <div class="info-body border-t border-border p-5">
+          <h4 class="mb-3 text-lg font-bold">Kritériá hodnotenia</h4>
+          <p class="text-sm leading-7 text-muted-foreground">
+            Nastav otázky a ideálne odpovede. <b class="text-foreground">AI</b> podľa nich sama vyhodnotí každý hovor a spočíta skóre.
+          </p>
+          <div class="mt-4 flex items-center gap-2">
+            <button onclick="a_toggleCritInfo()" class="flex-1 rounded-md border border-border py-2 text-sm font-semibold hover:bg-muted">Dismiss</button>
+            <button onclick="a_openCritVoice(event)" class="flex flex-1 items-center justify-center gap-2 rounded-md bg-green-600 py-2 text-sm font-semibold text-white hover:bg-green-700"><i data-lucide="audio-waveform" class="h-4 w-4"></i> Learn more</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    function critVoiceCard(){
+      return voiceAgentCard("Kritériá hodnotenia", "a_closeCritVoice", [
+        "Kritérium hovorí, čo je pre teba dôležité. Podľa neho sa počíta skóre hovoru.",
+        "Required musí sedieť. Preferred pridá body navyše. Váha určuje, koľko.",
+      ]);
+    }
+    function qMetaFor(key){ if (!analytics.qMeta[key]) analytics.qMeta[key] = { priority:"Preferred", weight:1, editing:false, deleted:false }; return analytics.qMeta[key]; }
+    window.a_setQPri = (key,v) => { qMetaFor(key).priority = v; refreshAnalytika(); };
+    window.a_toggleQEdit = key => { const m = qMetaFor(key); m.editing = !m.editing; refreshAnalytika(); };
+    window.a_updQText = (key, field, v) => { qMetaFor(key)[field] = v; };
+    window.a_deleteQ = key => { qMetaFor(key).deleted = true; analytics.enabledQ.delete(key); refreshAnalytika(); };
+    function scenarioQuestions(){
+      const out = [];
+      flow.forEach(n => {
+        if (n.t === "questions" && n.questions) n.questions.forEach((q, qi) => {
+          const key = n.id + ":" + qi;
+          if (qMetaFor(key).deleted) return;
+          if ((q.q||"").trim() || (q.ideal||"").trim()) out.push({ key, q:q.q||"", ideal:q.ideal||"" });
+        });
+      });
+      return out;
+    }
+    function refreshAnalytika(){
+      if (activeTab !== "analytika") return;
+      document.getElementById("view-other").innerHTML = analytikaHTML();
+      lucide.createIcons();
+    }
+    window.a_addField = () => { analytics.fields.push({ name:"", type:"Text", ideal:"", open:true }); refreshAnalytika(); };
+    window.a_delField = i => { analytics.fields.splice(i,1); refreshAnalytika(); };
+    window.a_updField = (i,k,v) => { if (analytics.fields[i]) analytics.fields[i][k] = v; };
+    window.a_toggleField = i => { if (analytics.fields[i]) { analytics.fields[i].open = !analytics.fields[i].open; refreshAnalytika(); } };
+    window.a_toggleFreq = () => { analytics.frequentOpen = !analytics.frequentOpen; refreshAnalytika(); };
+    window.a_quickAdd = name => { analytics.fields.push({ name, type:"Text", ideal:"", open:true }); refreshAnalytika(); };
+    window.a_addCrit = () => { analytics.criteria.push({ name:"", ideal:"", priority:"Preferred", weight:1, active:true, saved:false }); refreshAnalytika(); };
+    window.a_delCrit = i => { analytics.criteria.splice(i,1); refreshAnalytika(); };
+    window.a_updCrit = (i,k,v) => { if (analytics.criteria[i]) analytics.criteria[i][k] = v; };
+    window.a_setCritPri = (i,v) => { if (analytics.criteria[i]) { analytics.criteria[i].priority = v; refreshAnalytika(); } };
+    window.a_saveCrit = i => { if (analytics.criteria[i]) { analytics.criteria[i].saved = true; refreshAnalytika(); } };
+    window.a_editCrit = i => { if (analytics.criteria[i]) { analytics.criteria[i].saved = false; refreshAnalytika(); } };
+    window.a_toggleCritActive = i => { if (analytics.criteria[i]) { analytics.criteria[i].active = !analytics.criteria[i].active; refreshAnalytika(); } };
+    window.a_addOut = () => { analytics.outcomes.push({ name:"", when:"" }); refreshAnalytika(); };
+    window.a_delOut = i => { analytics.outcomes.splice(i,1); refreshAnalytika(); };
+    window.a_updOut = (i,k,v) => { if (analytics.outcomes[i]) analytics.outcomes[i][k] = v; };
+    window.a_addTag = () => { analytics.tags.push({ name:"", when:"" }); refreshAnalytika(); };
+    window.a_delTag = i => { analytics.tags.splice(i,1); refreshAnalytika(); };
+    window.a_updTag = (i,k,v) => { if (analytics.tags[i]) analytics.tags[i][k] = v; };
+
+    function escAttr(s){ return String(s||"").replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+    function escText(s){ return String(s||"").replace(/</g,'&lt;'); }
+
+    function fieldCard(f, i){
+      const header = `<button onclick="a_toggleField(${i})" class="flex flex-1 items-center gap-2 text-left">
+        <i data-lucide="chevron-${f.open?'down':'right'}" class="h-4 w-4 text-muted-foreground"></i>
+        <span class="text-sm font-semibold ${f.name?'text-foreground':'text-muted-foreground'}">${escText(f.name) || 'Neaktívne pole'}</span>
+      </button>`;
+      const body = !f.open ? "" : `
+        <div class="mt-3 space-y-2">
+          <div class="flex gap-2">
+            <input value="${escAttr(f.name)}" oninput="a_updField(${i},'name',this.value)" placeholder="Názov poľa (napr. Roky praxe)" class="flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20">
+            <select onchange="a_updField(${i},'type',this.value)" class="w-32 rounded-md border border-border bg-card px-2 py-2 text-sm outline-none focus:border-[#003AB8]">
+              ${FIELD_TYPES.map(t => `<option ${f.type===t?'selected':''}>${t}</option>`).join("")}
+            </select>
+          </div>
+          <input value="${escAttr(f.ideal)}" oninput="a_updField(${i},'ideal',this.value)" placeholder="Ideál — ako vyzerá dobrá hodnota (nechajte prázdne pre nehodnotenie tohto poľa)" class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20">
+        </div>`;
+      return `<div class="sub-card px-4 py-3">
+        <div class="flex items-center gap-3">
+          ${header}
+          <span class="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">${f.type||'Text'}</span>
+          <button onclick="a_delField(${i})" class="text-red-500 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+        </div>
+        ${body}
+      </div>`;
+    }
+
+    function priWeightRow(pri, w, pct, onPri, onWeight){
+      return `<div class="mt-3 flex flex-wrap items-center gap-3">
+        <div class="seg">
+          <button class="${pri==='Required'?'on-req':''}" onclick="${onPri}('Required')">Required</button>
+          <button class="${pri==='Preferred'?'on-pref':''}" onclick="${onPri}('Preferred')">Preferred</button>
+        </div>
+        <span class="text-xs font-medium text-muted-foreground">Weight</span>
+        <input type="number" min="1" max="10" value="${w}" oninput="${onWeight}(this.value)" class="w-14 rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-[#003AB8]">
+        <span class="text-xs text-muted-foreground">${pct}% of score</span>
+      </div>`;
+    }
+    function critCard(c, i, sq){
+      const pri = c.priority || "Preferred";
+      const w = c.weight ?? 1;
+      const totalW = totalScoreWeight(sq);
+      const pct = c.active === false ? 0 : Math.round(((Number(w)||0) / totalW) * 100);
+
+      if (c.saved) {
+        const on = c.active !== false;
+        return `<div class="sub-card px-4 py-3">
+          <div class="flex items-center gap-3">
+            <span class="switch shrink-0"><input type="checkbox" ${on?'checked':''} onchange="a_toggleCritActive(${i})"><span class="track"></span><span class="thumb"></span></span>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold">${escText(c.name) || '(bez názvu)'}</p>
+              ${c.ideal ? `<p class="mt-0.5 truncate text-xs text-muted-foreground">Ideálna odpoveď: ${escText(c.ideal)}</p>` : ""}
+            </div>
+            <button onclick="a_editCrit(${i})" class="text-muted-foreground hover:text-[#003AB8]"><i data-lucide="pencil" class="h-4 w-4"></i></button>
+            <button onclick="a_delCrit(${i})" class="text-red-500 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+          </div>
+          ${priWeightRow(pri, w, pct, `a_setCritPri.bind(null,${i})`, `(v)=>{a_updCrit(${i},'weight',v);refreshAnalytika()}`)}
+        </div>`;
+      }
+
+      return `<div class="sub-card px-4 py-3">
+        <div class="flex items-center gap-2">
+          <input value="${escAttr(c.name)}" oninput="a_updCrit(${i},'name',this.value)" placeholder="Názov kritéria (napr. Zvládnutie námietok)" class="flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20">
+          <button onclick="a_delCrit(${i})" class="text-red-500 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+        </div>
+        <textarea rows="2" oninput="a_updCrit(${i},'ideal',this.value)" placeholder="Ako vyzerá dobre zvládnutý hovor pre toto kritérium (nechajte prázdne pre nehodnotenie)" class="mt-2 w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20">${escText(c.ideal)}</textarea>
+        ${priWeightRow(pri, w, pct, `a_setCritPri.bind(null,${i})`, `(v)=>{a_updCrit(${i},'weight',v);refreshAnalytika()}`)}
+        <div class="mt-3 flex justify-end">
+          <button onclick="a_saveCrit(${i})" class="flex items-center gap-1.5 rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700"><i data-lucide="check" class="h-4 w-4"></i> Uložiť</button>
+        </div>
+      </div>`;
+    }
+
+    function outcomeCard(o, i){
+      return `<div class="sub-card px-4 py-3">
+        <div class="flex items-start gap-2">
+          <div class="flex-1 space-y-2">
+            <input value="${escAttr(o.name)}" oninput="a_updOut(${i},'name',this.value)" placeholder="Názov výsledku (napr. Schôdzka dohodnutá)" class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20">
+            <textarea rows="2" oninput="a_updOut(${i},'when',this.value)" placeholder="Počíta sa ako úspech, keď… (napr. kontakt súhlasil so špecifickým dátumom a časom)" class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20">${escText(o.when)}</textarea>
+          </div>
+          <button onclick="a_delOut(${i})" class="mt-1 text-red-500 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+        </div>
+      </div>`;
+    }
+
+    function tagCard(t, i){
+      return `<div class="sub-card px-4 py-3">
+        <div class="flex items-start gap-2">
+          <div class="flex-1 space-y-2">
+            <input value="${escAttr(t.name)}" oninput="a_updTag(${i},'name',this.value)" placeholder="Názov štítku (napr. vyzaduje_followup)" class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20 font-mono">
+            <textarea rows="2" oninput="a_updTag(${i},'when',this.value)" placeholder="Kedy tento štítok použiť (napr. kontakt požiadal o zavolanie neskôr)" class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20">${escText(t.when)}</textarea>
+          </div>
+          <button onclick="a_delTag(${i})" class="mt-1 text-red-500 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+        </div>
+      </div>`;
+    }
+
+    const SAVE_PREVIEW = {
+      record:     { icon:"file-audio",   text:"Získaš zvukovú stopu hovoru uloženú ako súbor, pripravenú na prehratie alebo stiahnutie." },
+      transcript: { icon:"file-text",    text:"Textový prepis rozhovoru rozdelený po vetách, s časovou značkou pri každej z nich." },
+      summary:    { icon:"align-left",   text:"Krátke zhrnutie v troch až piatich vetách, ktoré zachytáva priebeh a výsledok hovoru." },
+      qa:         { icon:"list-checks",  text:"Prehľadný zoznam otázok a odpovedí kandidáta usporiadaný do tabuľky." },
+      scoring:    { icon:"gauge",        text:"Číselné skóre zhody spolu so zoznamom silných a slabých stránok z hovoru." },
+      sentiment:  { icon:"activity",     text:"Priebeh nálady volajúceho počas hovoru — kedy bol pozitívny, neutrálny alebo negatívny." },
+    };
+    window.a_toggleSave = key => { analytics.save[key] = !analytics.save[key]; refreshAnalytika(); };
+    function saveRow2(title, desc, key){
+      const on = analytics.save[key];
+      const pv = SAVE_PREVIEW[key];
+      return `<div>
+        <div class="flex items-center justify-between gap-6">
+          <div><p class="text-sm font-semibold">${title}</p><p class="text-xs text-muted-foreground">${desc}</p></div>
+          <span class="switch"><input type="checkbox" ${on?'checked':''} onchange="a_toggleSave('${key}')"><span class="track"></span><span class="thumb"></span></span>
+        </div>
+        ${on ? `<div class="mt-2.5 flex items-start gap-2 rounded-md sub-card bg-white px-3 py-2.5">
+          <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="${pv.icon}" class="h-3.5 w-3.5"></i></span>
+          <p class="text-xs leading-5 text-muted-foreground">${pv.text}</p>
+        </div>` : ""}
+      </div>`;
+    }
+
+    function totalScoreWeight(sq){
+      let total = 0;
+      analytics.criteria.forEach(c => { if (c.active === false) return; if ((c.name||"").trim() || (c.ideal||"").trim()) total += Number(c.weight)||1; });
+      analytics.fields.forEach(f => { if ((f.ideal||"").trim()) total += 1; });
+      analytics.enabledQ.forEach(k => { total += Number(qMetaFor(k).weight)||1; });
+      return total || 1;
+    }
+    function scoreState(sq){
+      const scored = [];
+      analytics.criteria.forEach(c => { if (c.active === false) return; if ((c.name||"").trim() || (c.ideal||"").trim()) scored.push({ label:c.name||"(bez názvu)", weight:Number(c.weight)||1, priority:c.priority||"Preferred" }); });
+      analytics.fields.forEach(f => { if ((f.ideal||"").trim()) scored.push({ label:f.name||"(bez názvu)", weight:1, priority:"Preferred" }); });
+      analytics.enabledQ.forEach(k => {
+        const m = qMetaFor(k);
+        const src = (sq||[]).find(x => x.key === k);
+        const label = m.qOverride ?? src?.q ?? "otázka scenára";
+        scored.push({ label, weight:Number(m.weight)||1, priority:m.priority||"Preferred" });
+      });
+      if (scored.length === 0) return { empty:true, segments:[] };
+      const totalW = scored.reduce((s,x) => s + x.weight, 0) || 1;
+      const segments = scored.map(s => ({ ...s, pct: Math.round((s.weight / totalW) * 100) }));
+      return { empty:false, segments };
+    }
+
+    function analytikaHTML(){
+      const sq = scenarioQuestions();
+      const st = scoreState(sq);
+      return `<div class="analytics-wrap w-full px-10 py-8">
+        <div class="sec-card bd-blue p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex items-start gap-3">
+              <span class="flex h-9 w-9 items-center justify-center rounded-md bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="scale" class="h-5 w-5"></i></span>
+              <div><h3 class="text-base font-bold">Skóre zhody</h3></div>
+            </div>
+            <span class="text-xs text-muted-foreground">Aktualizuje sa naživo podľa úprav nižšie</span>
+          </div>
+          ${st.empty
+            ? `<p class="mt-4 text-sm text-muted-foreground">Zatiaľ nič nebolo ohodnotené. Ak chcete zostaviť skóre zhody, pridajte ideálnu hodnotu k poľu nižšie alebo ohodnoťte otázku v kritériách.</p>`
+            : `<div class="mt-5 flex h-9 w-full overflow-hidden rounded-md border border-border">
+                ${st.segments.map(s => `<div class="flex items-center justify-center text-[11px] font-semibold text-white" style="width:${s.pct}%;background:${s.priority==='Required'?'#f59e0b':'#22c55e'}" title="${escAttr(s.label)} — ${s.pct}%">
+                  <span class="truncate px-2">${escText(s.label)} — ${s.pct}%</span>
+                </div>`).join("")}
+              </div>
+              <div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-[#f59e0b]"></span>Required — a miss disqualifies the call</span>
+                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-[#22c55e]"></span>Preferred — adds weighted points</span>
+              </div>`
+          }
+        </div>
+
+        <div class="flex items-start gap-6" style="margin-left:-14px">
+        <div class="sec-card bd-indigo p-8 flex-1" style="background:#fafafc;min-width:0;position:relative">
+          ${guideBtn(analytics.critInfoOpen, "a_toggleCritInfo")}
+          ${sectionHeader("scale","Kritériá hodnotenia","Ohodnoťte odpovede na otázky zo scenára a akékoľvek vlastné kritériá, ktoré nie sú jedným poľom ani otázkou.", true)}
+          <p class="mt-5 mb-2 text-xs font-semibold text-muted-foreground">Z vašich otázok v scenári</p>
+          ${sq.length === 0
+            ? `<p class="mb-4 text-xs text-muted-foreground">V scenári zatiaľ nie sú žiadne otázky. Pridajte blok otázok na karte Scénár pre hodnotenie odpovedí tu.</p>`
+            : `<div class="mb-5 space-y-2">
+                ${sq.map(q => {
+                  const on = analytics.enabledQ.has(q.key);
+                  const m = qMetaFor(q.key);
+                  const totalW = totalScoreWeight(sq);
+                  const pct = on ? Math.round(((Number(m.weight)||0) / totalW) * 100) : 0;
+                  const qText = m.qOverride ?? q.q;
+                  const idealText = m.idealOverride ?? q.ideal;
+                  if (m.editing) {
+                    return `<div class="sub-card px-4 py-3">
+                      <div class="flex items-center gap-2">
+                        <input value="${escAttr(qText)}" oninput="a_updQText('${q.key}','qOverride',this.value)" placeholder="Text otázky" class="flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20">
+                        <button onclick="a_toggleQEdit('${q.key}')" class="flex items-center gap-1.5 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700"><i data-lucide="check" class="h-4 w-4"></i></button>
+                        <button onclick="a_deleteQ('${q.key}')" class="text-red-500 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                      </div>
+                      <input value="${escAttr(idealText)}" oninput="a_updQText('${q.key}','idealOverride',this.value)" placeholder="Ideálna odpoveď" class="mt-2 w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20">
+                      ${priWeightRow(m.priority, m.weight, pct, `a_setQPri.bind(null,'${q.key}')`, `(v)=>{a_updQText('${q.key}','weight',v);refreshAnalytika()}`)}
+                    </div>`;
+                  }
+                  return `<div class="sub-card px-4 py-3">
+                    <div class="flex items-center gap-3">
+                      <span class="switch shrink-0"><input type="checkbox" ${on?'checked':''} onchange="a_toggleQ('${q.key}')"><span class="track"></span><span class="thumb"></span></span>
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-semibold">${escText(qText) || '(bez textu otázky)'}</p>
+                        ${idealText ? `<p class="mt-0.5 truncate text-xs text-muted-foreground">Ideálna odpoveď: ${escText(idealText)}</p>` : ""}
+                      </div>
+                      <button onclick="a_toggleQEdit('${q.key}')" class="text-muted-foreground hover:text-[#003AB8]"><i data-lucide="pencil" class="h-4 w-4"></i></button>
+                      <button onclick="a_deleteQ('${q.key}')" class="text-red-500 hover:text-red-600"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                    </div>
+                    ${priWeightRow(m.priority, m.weight, pct, `a_setQPri.bind(null,'${q.key}')`, `(v)=>{a_updQText('${q.key}','weight',v);refreshAnalytika()}`)}
+                  </div>`;
+                }).join("")}
+              </div>`
+          }
+          <p class="mt-2 mb-2 text-xs font-semibold text-muted-foreground">Vlastné kritériá — celkové posúdenie celého hovoru (napr. zvládnutie námietok, budovanie vzťahu)</p>
+          ${analytics.criteria.length ? `<div class="mb-3 space-y-2">${analytics.criteria.map((c,i) => critCard(c,i,sq)).join("")}</div>` : ""}
+          <button onclick="a_addCrit()" class="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium shadow-sm hover:bg-muted"><i data-lucide="plus" class="h-4 w-4"></i> Pridať kritérium</button>
+        </div>
+        ${analytics.critInfoOpen ? `<div class="shrink-0" style="width:290px">${analytics.critVoiceOpen ? critVoiceCard() : critInfoCard()}</div>` : ""}
+        </div>
+
+        <div class="flex items-start gap-6">
+        <div class="sec-card bd-teal p-6 flex-1" style="min-width:0;position:relative">
+          ${guideBtn(analytics.recInfoOpen, "a_toggleRecInfo")}
+          ${sectionHeader("database","Čo AI zaznamenáva","Polia získavané z každého hovoru. Zadajte poľu ideálnu hodnotu, aby sa započítavalo do skóre.","small")}
+          ${analytics.fields.length===0
+            ? `<p class="mt-4 text-xs text-muted-foreground">napr. vzdelanie, roky praxe, jazyky, seniorita.</p>`
+            : `<div class="mt-4 space-y-2">${analytics.fields.map((f,i) => fieldCard(f,i)).join("")}</div>`
+          }
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button onclick="a_addField()" class="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium shadow-sm hover:bg-muted"><i data-lucide="plus" class="h-4 w-4"></i> Pridať pole</button>
+            <button onclick="a_toggleFreq()" class="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium shadow-sm ${analytics.frequentOpen?'is-open':''}"><i data-lucide="list" class="h-4 w-4"></i> Časté polia <i data-lucide="chevron-${analytics.frequentOpen?'down':'right'}" class="h-4 w-4"></i></button>
+          </div>
+          ${analytics.frequentOpen ? `
+            <div class="sub-card mt-4 space-y-4 p-4">
+              ${FREQUENT_FIELDS.map(g => `
+                <div>
+                  <p class="mb-2 text-xs font-semibold text-muted-foreground">${g.group}</p>
+                  <div class="flex flex-wrap gap-1.5">
+                    ${g.items.map((item, ci) => `<button onclick="a_quickAdd('${escAttr(item)}')" class="chip c${ci % 8}"><i data-lucide="plus" class="h-3 w-3"></i> ${item}</button>`).join("")}
+                  </div>
+                </div>`).join("")}
+            </div>` : ""}
+        </div>
+        ${analytics.recInfoOpen ? `<div class="shrink-0" style="width:290px">${analytics.recVoiceOpen ? recVoiceCard() : recInfoCard()}</div>` : ""}
+        </div>
+
+        <div class="flex items-start gap-6">
+        <div class="sec-card bd-amber p-6 flex-1" style="min-width:0;position:relative">
+          ${guideBtn(analytics.outInfoOpen, "a_toggleOutInfo")}
+          ${sectionHeader("tag","Výsledky a štítky","Nepovinné. Ako bude každý hovor potom kategorizovaný.","small")}
+          <p class="mt-4 mb-2 text-xs font-semibold text-muted-foreground">Výsledky — čo sa počíta ako úspešný hovor (nechajte prázdne pre preskočenie analýzy výsledkov)</p>
+          ${analytics.outcomes.length ? `<div class="mb-3 space-y-2">${analytics.outcomes.map((o,i) => outcomeCard(o,i)).join("")}</div>` : ""}
+          <button onclick="a_addOut()" class="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium shadow-sm hover:bg-muted"><i data-lucide="plus" class="h-4 w-4"></i> Pridať výsledok</button>
+          <p class="mt-6 mb-2 text-xs font-semibold text-muted-foreground">Štítky — štítky, ktoré AI môže automaticky priradiť, s pravidlom pre ich použitie</p>
+          ${analytics.tags.length ? `<div class="mb-3 space-y-2">${analytics.tags.map((t,i) => tagCard(t,i)).join("")}</div>` : ""}
+          <button onclick="a_addTag()" class="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium shadow-sm hover:bg-muted"><i data-lucide="plus" class="h-4 w-4"></i> Pridať štítok</button>
+        </div>
+        ${analytics.outInfoOpen ? `<div class="shrink-0" style="width:290px">${analytics.outVoiceOpen ? outVoiceCard() : outInfoCard()}</div>` : ""}
+        </div>
+
+        <div class="sec-card bd-rose p-6">
+          ${sectionHeader("save","Čo ukladať","Vypnite čokoľvek, čo nechcete vytvárať alebo ukladať.","small")}
+          <div class="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+            ${saveRow2("Nahrávanie hovoru","Uložiť nespracovaný stereo záznam audio rozhovoru.","record")}
+            ${saveRow2("Prepis","Generovať a uložiť kompletný textový prepis s časovými značkami.","transcript")}
+            ${saveRow2("Zhrnutie","Generovať štruktúrované zhrnutie hovoru v odstavcoch.","summary")}
+            ${saveRow2("Extrahované Q&A","Extrahovať štruktúrované odpovede na kľúčové otázky kandidáta alebo leadu.","qa")}
+            ${saveRow2("Hodnotenie","Vypočítať skóre zhody, silné a slabé stránky a námietky.","scoring")}
+            ${saveRow2("Analýza sentimentu","Sledovať náladu a vývoj tónu volajúceho v priebehu celého hovoru.","sentiment")}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function nastaveniaHTML(){
+      return `<div class="max-w-6xl px-10 py-8">
+        <div class="sec-card p-7">
+          ${sectionHeader("phone-outgoing","Smerovanie a limity hovorov","Nakonfigurujte identifikáciu volajúceho a maximálnu dĺžku hovorov.")}
+          <div class="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-semibold">Caller ID</label>
+              <p class="mb-2 text-xs text-muted-foreground">Telefónne číslo, z ktorého je hovor uskutočnený.</p>
+              <select class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8]"><option>🇸🇰 +421 232 408 700</option><option>🇨🇿 +420 232 408 700</option></select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold">Limit dĺžky hovoru</label>
+              <p class="mb-2 text-xs text-muted-foreground">Maximálna povolená dĺžka pre každý hovor.</p>
+              <div class="flex items-center gap-3">
+                <input type="range" min="1" max="30" value="10" class="w-full accent-[#003AB8]">
+                <span class="whitespace-nowrap text-sm font-semibold">10 min</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 sec-card p-7">
+          ${sectionHeader("rotate-ccw","Opakovanie a plánovanie","Ako a kedy sa opakujú nezdvihnuté hovory. Zatiaľ pevne nastavené — v ďalšej aktualizácii pôjde upraviť.")}
+          <div class="mt-5 space-y-3">
+            <div class="sub-card flex items-center justify-between px-4 py-3">
+              <div class="flex items-center gap-3">
+                <span class="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground"><i data-lucide="rotate-ccw" class="h-4 w-4"></i></span>
+                <div><p class="text-sm font-semibold">Počet pokusov</p><p class="text-xs text-muted-foreground">Každý kontakt sa vytočí až 3× než to vzdáme. Nastaviteľné (1–5) v ďalšej aktualizácii.</p></div>
+              </div>
+              <span class="rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">Až 3</span>
+            </div>
+            <div class="sub-card flex items-center justify-between px-4 py-3">
+              <div class="flex items-center gap-3">
+                <span class="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground"><i data-lucide="clock" class="h-4 w-4"></i></span>
+                <div><p class="text-sm font-semibold">Hodiny volania</p><p class="text-xs text-muted-foreground">Hovory a opakovania prebiehajú iba počas miestnej pracovnej doby.</p></div>
+              </div>
+              <span class="rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">Pracovná doba</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 sec-card p-7">
+          ${sectionHeader("bell","Automatizácia a upozornenia","Nakonfigurujte varovanie pri hovore, automatické SMS spúšťače a štítky kampaní.")}
+          <div class="mt-5 space-y-3">
+            ${comingSoonRow("Varovanie pred koncom hovoru","Upozornenie nastavený čas pred koncom a tesne pred zavesením.")}
+            ${comingSoonRow("SMS pred hovorom","SMS správa kontaktu krátko pred hovorom (využíva nastavenie SMS agenta).")}
+            ${comingSoonRow("Vstupné štítky","Štítky kampane prenášané do analytiky.")}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function integracieHTML(){
+      return `<div class="max-w-6xl px-10 py-8">
+        <div class="sec-card p-7">
+          ${sectionHeader("calendar","Plánovanie kalendára","Synchronizujte s kalendárnymi platformami a ponúkajte voľné termíny priamo počas konverzácie.")}
+          <div class="mt-5 space-y-3">
+            ${comingSoonRow("Google Kalendár","Rezervujte schôdzky priamo do kalendára obchodného zástupcu.")}
+            ${comingSoonRow("Outlook","Rezervujte schôdzky do Outlooku / Microsoft 365.")}
+            ${comingSoonRow("Calendly","Ponúknite termíny z Calendly, ak je cieľom dohodnúť schôdzku.")}
+          </div>
+        </div>
+
+        <div class="mt-5 sec-card p-7">
+          ${sectionHeader("link","CRM a synchronizácia cez API","Synchronizujte výsledky hovorov a stavy kontaktov späť do vášho CRM alebo na vlastné koncové body.")}
+          <div class="mt-5 space-y-3">
+            ${comingSoonRow("HubSpot CRM","Synchronizujte podrobnosti, prepisy a skóre priamo ku kontaktom v HubSpote.")}
+            ${comingSoonRow("Salesforce","Vytvárajte záznamy o leadoch a protokolujte hovory v Salesforce.")}
+            ${comingSoonRow("Webhooks","Prijímajte dáta v reálnom čase na vlastnú URL pri dokončení hovoru.")}
+          </div>
+        </div>
+      </div>`;
+    }
+    const VOICES = [
+      { name:"Alex", g:"m" }, { name:"Peter", g:"m" }, { name:"Miriam", g:"f" }, { name:"Sue", g:"f" },
+      { name:"Viera", g:"f" }, { name:"Casandra", g:"f" }, { name:"Silvia", g:"f" }, { name:"Michael", g:"m" },
+      { name:"Luke", g:"m" }, { name:"Emma", g:"f" }, { name:"Sarah", g:"f" }, { name:"Eva", g:"f" },
+    ];
+    let selectedVoice = "Eva";
+    const V_GRADS = {
+      Alex:["#c7d2fe","#6366f1"], Peter:["#bae6fd","#0284c7"], Miriam:["#fecdd3","#e11d48"], Sue:["#fbcfe8","#db2777"],
+      Viera:["#ddd6fe","#7c3aed"], Casandra:["#fed7aa","#ea580c"], Silvia:["#a7f3d0","#059669"], Michael:["#bfdbfe","#1d4ed8"],
+      Luke:["#e9d5ff","#9333ea"], Emma:["#fce7f3","#c026d3"], Sarah:["#fef3c7","#d97706"], Eva:["#fecaca","#dc2626"],
+    };
+    function avatarHTML(name){
+      const src = name === "Alex" ? "alex.svg" : name === "Casandra" ? "casandra.svg" : null;
+      const [c1,c2] = V_GRADS[name] || ["#e5e7eb","#6b7280"];
+      const initial = name[0];
+      if (src) return `<img src="${src}" alt="${name}" class="h-20 w-20 rounded-full object-cover border border-border" onerror="this.outerHTML='<span class=\\'flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold text-white\\' style=\\'background:linear-gradient(135deg,${c1},${c2})\\'>${initial}</span>'">`;
+      return `<span class="flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold text-white" style="background:linear-gradient(135deg,${c1},${c2})">${initial}</span>`;
+    }
+    function hlasHTML(){
+      return `<div class="max-w-6xl px-10 py-8">
+        <div class="sec-card p-7">
+          <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="languages" class="h-5 w-5"></i></span>
+            <div><h3 class="text-base font-bold">Hlas a jazyk</h3><p class="text-sm text-muted-foreground">Vyberte hlavný jazyk, ktorým agent hovorí, a nakonfigurujte zvuk na pozadí.</p></div>
+          </div>
+          <div class="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-semibold">Jazyk</label>
+              <p class="mb-2 text-xs text-muted-foreground">Hlavný jazyk, ktorým bude agent hovoriť.</p>
+              <select class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8]"><option>🇬🇧 Angličtina</option><option>🇸🇰 Slovenčina</option><option>🇨🇿 Čeština</option><option>🇩🇪 Nemčina</option></select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold">Zvuk na pozadí</label>
+              <p class="mb-2 text-xs text-muted-foreground">Okolitý zvuk pridávaný pre realistickejší dojem z hovoru.</p>
+              <select class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8]"><option>Kancelária (predvolené)</option><option>Ticho</option><option>Kaviareň</option><option>Ulica</option></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 sec-card p-7">
+          <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="mic" class="h-5 w-5"></i></span>
+            <div><h3 class="text-base font-bold">Hlas agenta</h3><p class="text-sm text-muted-foreground">Vyberte hlasový profil a prízvuk pre vášho agenta. Kliknutím na kartu hlasu si prehráte ukážku.</p></div>
+          </div>
+          <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            ${VOICES.map(v => `
+              <div onclick="selectVoice('${v.name}')" class="relative flex cursor-pointer flex-col items-center gap-3 rounded-xl border ${selectedVoice===v.name?'border-[#003AB8] ring-2 ring-[#003AB8]/25':'border-border'} bg-card p-4 shadow-sm transition-all hover:border-[#003AB8]/60">
+                <span class="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full ${v.g==='m'?'bg-[#003AB8]/15 text-[#003AB8]':'bg-pink-100 text-pink-600'}" title="${v.g==='m'?'Muž':'Žena'}">
+                  <i data-lucide="${v.g==='m'?'user':'user'}" class="h-3 w-3"></i>
+                </span>
+                ${avatarHTML(v.name)}
+                <span class="text-sm font-semibold">${v.name}</span>
+                <button onclick="event.stopPropagation()" class="flex w-full items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium shadow-sm hover:bg-muted"><i data-lucide="play" class="h-3.5 w-3.5"></i> Prehrať</button>
+              </div>`).join("")}
+          </div>
+        </div>
+      </div>`;
+    }
+    function selectVoice(name){ selectedVoice = name; setTab("hlas"); }
+    function kontextHTML(){
+      return `<div class="max-w-6xl px-10 py-8">
+        <div class="sec-card p-7">
+          <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="user-round" class="h-5 w-5"></i></span>
+            <div><h3 class="text-base font-bold">Persona agenta</h3><p class="text-sm text-muted-foreground">Definujte identitu agenta, jeho rolu a štýl komunikácie počas hovoru.</p></div>
+          </div>
+          <div class="mt-5">
+            <label class="block text-sm font-semibold">Rola / systémový prompt</label>
+            <p class="mb-2 text-xs text-muted-foreground">Kto AI je a o čom hovor je — napr. HR recruiter volajúci ohľadom žiadosti o prácu.</p>
+            <textarea rows="4" class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" placeholder="napr. Ste priateľský HR recruiter pre Acme, ktorý volá kandidátom na posúdenie ich vhodnosti pre obchodnú rolu."></textarea>
+          </div>
+          <div class="mt-5">
+            <label class="block text-sm font-semibold">Štýl komunikácie</label>
+            <p class="mb-2 text-xs text-muted-foreground">Tón a štýl vyjadrovania odpovedí agenta.</p>
+            <select class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8]"><option>Vyberte štýl</option><option>Profesionálny</option><option>Priateľský</option><option>Neformálny</option><option>Struční a vecný</option></select>
+          </div>
+        </div>
+
+        <div class="mt-5 sec-card p-7">
+          <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="book-open" class="h-5 w-5"></i></span>
+            <div><h3 class="text-base font-bold">Kontext a znalosti</h3><p class="text-sm text-muted-foreground">Poskytnite kontext, pokyny a externé dokumenty, na ktoré sa agent môže odkazovať.</p></div>
+          </div>
+          <div class="mt-5">
+            <label class="block text-sm font-semibold">Cieľ hovoru (výzva k akcii)</label>
+            <p class="mb-2 text-xs text-muted-foreground">Čo chce agent počas rozhovoru dosiahnuť.</p>
+            <input class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" placeholder="napr. Dohodnúť si nadväzujúcu schôdzku">
+          </div>
+          <label class="mt-5 flex items-center justify-between">
+            <span><span class="block text-sm font-semibold">Zahrnúť kontext spoločnosti</span><span class="block text-xs text-muted-foreground">Vloží popis vašej spoločnosti (z nastavení) do kontextu agenta.</span></span>
+            <span class="switch"><input type="checkbox"><span class="track"></span><span class="thumb"></span></span>
+          </label>
+          <div class="mt-5 flex items-center justify-between rounded-lg border border-dashed border-border px-4 py-4 opacity-70">
+            <div><p class="text-sm font-semibold">Znalostná báza</p><p class="text-xs text-muted-foreground">Nahrajte PDF dokumenty (popis pozície, cenník, FAQ), z ktorých môže AI čerpať.</p></div>
+            <span class="flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"><i data-lucide="lock" class="h-3 w-3"></i> Čoskoro</span>
+          </div>
+          <div class="mt-3 flex items-center justify-between rounded-lg border border-dashed border-border px-4 py-4 opacity-70">
+            <div><p class="text-sm font-semibold">Osobný kontext (CV / zdroj kontaktu)</p><p class="text-xs text-muted-foreground">Umožní AI odkazovať sa na nahrané CV kontaktu alebo zdroj.</p></div>
+            <span class="flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"><i data-lucide="lock" class="h-3 w-3"></i> Čoskoro</span>
+          </div>
+        </div>
+
+        <div class="mt-5 sec-card p-7">
+          <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
+            <div><h3 class="text-base font-bold">Pravidlá správania</h3><p class="text-sm text-muted-foreground">Pravidlá, ktoré musí agent vždy dodržiavať. Štandardná ochrana proti zneužitiu a udržaniu témy sa aplikuje automaticky.</p></div>
+          </div>
+          <button class="mt-4 flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm hover:bg-muted"><i data-lucide="plus" class="h-4 w-4"></i> Pridať pravidlo</button>
+        </div>
+      </div>`;
+    }
+
+    // ---------- flow ----------
+    const NODE = {
+      intro:     { title:"Úvodná správa", icon:"flag", color:"#16a34a", bg:"#e8f7ee", sub:"Ahoj {{contact.first_name}}, tu…" },
+      topic:     { title:"Téma / Agenda", icon:"message-square", color:"#003AB8", bg:"rgba(0,58,184,.1)", sub:"Čo by tu mal agent…" },
+      questions: { title:"Sada otázok", icon:"help-circle", color:"#7c3aed", bg:"rgba(124,58,237,.12)", sub:"1 otázka" },
+      branch:    { title:"Podmienená trasa", icon:"git-branch", color:"#d97706", bg:"#fef3c7", sub:"Yes · No" },
+      end:       { title:"Záverečná správa", icon:"flag", color:"#db2777", bg:"#fce7f3", sub:"Ďakujem za váš čas, {{contact.firs…" },
+    };
+    const CONTACT_VARS = ["Meno","Priezvisko","E-mail","Telefón","Názov firmy","Meno agenta"];
+    let flow = [ {t:"intro",id:"n1"}, {t:"topic",id:"n2"}, {t:"end",id:"n3"} ];
+    let selNode = null;
+    let uid = 4;
+    function nodeSub(n){
+      const d = NODE[n.t];
+      if (n.t === "questions") { const c = (n.questions||[{}]).length; return c + " " + (c===1?"otázka":(c<5?"otázky":"otázok")); }
+      if (n.t === "branch") return (n.routes||[]).map(r => r.name).join(" · ");
+      return d.sub;
+    }
+    function renderFlow(){
+      const el = document.getElementById("flow");
+      let html = "";
+      flow.forEach((n, i) => {
+        const d = NODE[n.t];
+        html += `<div class="fnode ${selNode===n.id?'sel':''}" onclick="selectNode('${n.id}')">
+          <span class="ic" style="background:${d.bg};color:${d.color}"><i data-lucide="${d.icon}" class="h-4 w-4"></i></span>
+          <span style="min-width:0"><span class="tt">${d.title}</span><span class="sub">${nodeSub(n)}</span></span>
+        </div>`;
+        if (n.t === "branch") {
+          html += `<div class="fconn"></div>
+          <div class="broutes">
+            ${(n.routes||[]).map(r => `
+              <div class="broute">
+                <div class="brlbl">${r.name}</div>
+                <div class="fconn" style="height:22px"></div>
+                <button class="braddstep" onclick="event.stopPropagation();openAddPop(event, ${i}, '${r.name}')">+ Pridať krok do „${r.name}"</button>
+                <div class="fconn" style="height:22px"><button class="add" onclick="event.stopPropagation();openAddPop(event, ${i}, '${r.name}')"><i data-lucide="plus" class="h-4 w-4"></i></button></div>
+              </div>`).join("")}
+          </div>`;
+        }
+        if (i < flow.length - 1) html += `<div class="fconn"><button class="add" onclick="event.stopPropagation();openAddPop(event, ${i})"><i data-lucide="plus" class="h-4 w-4"></i></button></div>`;
+      });
+      el.innerHTML = html;
+      lucide.createIcons();
+    }
+    function selectNode(id){ selNode = id; closeAddPop(); renderFlow(); renderPanel(); }
+
+    // ---------- add-step popover ----------
+    let addPop = null;
+    const ADD_OPTIONS = [
+      { t:"topic",     title:"Téma / Agenda",    desc:"Definujte témy, scenáre alebo obrazovky, ktorými agent kontakt prevedie.", icon:"message-square", color:"#003AB8", bg:"rgba(0,58,184,.1)" },
+      { t:"questions", title:"Sada otázok",      desc:"Pýtajte sa a vyhodnocujte odpovede. Pridané ideálne odpovede sa započítavajú do skóre zhody.", icon:"help-circle", color:"#7c3aed", bg:"rgba(124,58,237,.12)" },
+      { t:"branch",    title:"Podmienená trasa", desc:"Vetvte cestu dynamicky na základe zámeru volajúceho alebo používateľského vstupu.", icon:"git-branch",  color:"#d97706", bg:"#fef3c7" },
+    ];
+    function openAddPop(ev, afterIdx, route){
+      closeAddPop();
+      const pop = document.createElement("div");
+      pop.className = "addpop";
+      pop.innerHTML = `
+        <div class="addpop-h"><span>Pridať krok${route?` do „${route}"`:""}</span><button onclick="closeAddPop()" style="border:0;background:transparent;color:#8a8a93;cursor:pointer"><i data-lucide="x" class="h-4 w-4"></i></button></div>
+        ${ADD_OPTIONS.map(o => `
+          <div class="opt" onclick="pickAdd(${afterIdx}, '${o.t}')">
+            <span class="ic" style="background:${o.bg};color:${o.color}"><i data-lucide="${o.icon}" class="h-4 w-4"></i></span>
+            <div><div class="tt">${o.title}</div><div class="ds">${o.desc}</div></div>
+          </div>`).join("")}`;
+      const canvas = document.getElementById("canvas");
+      canvas.appendChild(pop);
+      // position to the right of the clicked +
+      const rect = ev.currentTarget.getBoundingClientRect();
+      const cRect = canvas.getBoundingClientRect();
+      pop.style.left = (rect.right - cRect.left + canvas.scrollLeft + 12) + "px";
+      pop.style.top  = (rect.top   - cRect.top  + canvas.scrollTop  - 8)  + "px";
+      addPop = pop;
+      lucide.createIcons();
+    }
+    function closeAddPop(){ if (addPop) { addPop.remove(); addPop = null; } }
+    function pickAdd(afterIdx, t){
+      const node = { t, id:"n"+(uid++) };
+      if (t === "questions") node.questions = [{ q:"", ideal:"" }];
+      if (t === "branch") node.routes = [
+        { name:"Yes", condition:"the contact agrees / responds positively" },
+        { name:"No",  condition:"the contact declines / responds negatively" },
+      ];
+      flow.splice(afterIdx+1, 0, node);
+      closeAddPop();
+      selNode = node.id;
+      renderFlow();
+      renderPanel();
+    }
+
+    // ---------- right panel ----------
+    function contactVarsHTML(){
+      return `
+        <p class="mb-2 text-xs font-semibold text-muted-foreground">Vložiť premennú kontaktu</p>
+        <div class="mb-5 flex flex-wrap gap-1.5">
+          ${CONTACT_VARS.map(v => `<span class="cvar"><i data-lucide="grip-vertical" class="h-3 w-3"></i>${v}</span>`).join("")}
+        </div>`;
+    }
+    function panelHeader(d, subtitle){
+      return `<div class="mb-5 flex items-center gap-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-lg" style="background:${d.bg};color:${d.color}"><i data-lucide="${d.icon}" class="h-5 w-5"></i></span>
+        <div><h3 class="text-base font-bold">${d.title}</h3><p class="text-xs text-muted-foreground">${subtitle}</p></div>
+      </div>`;
+    }
+    function panelQuestions(n, d){
+      const qs = n.questions || [];
+      return `
+        ${panelHeader(d, "Sada otázok")}
+        ${contactVarsHTML()}
+        <p class="mb-2 text-xs font-semibold text-muted-foreground">Otázky na položenie</p>
+        <div class="space-y-4 mb-4">
+          ${qs.map((q,i) => `
+            <div>
+              <p class="mb-1.5 text-xs font-medium text-muted-foreground">Otázka ${i+1}</p>
+              <textarea rows="3" class="mb-2 w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" placeholder="Otázka na položenie…"
+                oninput="updateQuestion('${n.id}', ${i}, 'q', this.value)">${q.q||""}</textarea>
+              <input class="w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" placeholder="Ideálna odpoveď (použitá na hodnotenie)"
+                value="${q.ideal||""}" oninput="updateQuestion('${n.id}', ${i}, 'ideal', this.value)">
+            </div>`).join("")}
+        </div>
+        <button onclick="addQuestion('${n.id}')" class="mb-6 flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium shadow-sm hover:bg-muted"><i data-lucide="plus" class="h-4 w-4"></i> Pridať otázku</button>
+        <label class="mb-1.5 block text-xs font-semibold text-muted-foreground">Názov kroku (nepovinné)</label>
+        <input class="mb-6 w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" placeholder="napr. Overiť rozpočet" value="${n.name||""}" oninput="updateNodeName('${n.id}', this.value)">
+        <button class="flex items-center gap-1.5 text-sm font-medium text-red-500" onclick="deleteNode('${n.id}')"><i data-lucide="trash-2" class="h-4 w-4"></i> Odstrániť krok</button>`;
+    }
+    function panelBranch(n, d){
+      const rs = n.routes || [];
+      return `
+        ${panelHeader(d, "Podmienená trasa")}
+        ${contactVarsHTML()}
+        ${rs.map((r,i) => `
+          <div class="mb-5">
+            <p class="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#d97706]"><i data-lucide="git-branch" class="h-3.5 w-3.5"></i> Trasa ${i+1}</p>
+            <label class="mb-1.5 block text-xs font-semibold text-muted-foreground">Názov trasy</label>
+            <input class="mb-3 w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" value="${r.name}" oninput="updateRoute('${n.id}', ${i}, 'name', this.value)">
+            <label class="mb-1.5 block text-xs font-semibold text-muted-foreground">Vydať sa touto trasou, keď…</label>
+            <input class="mb-2 w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" value="${r.condition}" oninput="updateRoute('${n.id}', ${i}, 'condition', this.value)">
+            <p class="text-xs text-muted-foreground">Na tejto trase zatiaľ nie sú žiadne kroky — pridajte ich z tejto trasy na scenári.</p>
+          </div>`).join("")}
+        <label class="mb-1.5 mt-2 block text-xs font-semibold text-muted-foreground">Názov kroku (nepovinné)</label>
+        <input class="mb-6 w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" placeholder="napr. Overiť rozpočet" value="${n.name||""}" oninput="updateNodeName('${n.id}', this.value)">
+        <button class="flex items-center gap-1.5 text-sm font-medium text-red-500" onclick="deleteNode('${n.id}')"><i data-lucide="trash-2" class="h-4 w-4"></i> Odstrániť krok</button>`;
+    }
+    function panelGeneric(n, d){
+      return `
+        ${panelHeader(d, "Upravte tento krok scenára")}
+        <label class="mb-1.5 block text-xs font-semibold text-muted-foreground">Názov kroku</label>
+        <input class="mb-4 w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" value="${n.name||d.title}" oninput="updateNodeName('${n.id}', this.value)">
+        <label class="mb-1.5 block text-xs font-semibold text-muted-foreground">Obsah / prompt</label>
+        <textarea rows="7" class="mb-4 w-full rounded-md border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" placeholder="Napíšte, čo má agent v tomto kroku spraviť…">${n.content||d.sub}</textarea>
+        <button class="flex items-center gap-1.5 text-sm font-medium text-red-500" onclick="deleteNode('${n.id}')"><i data-lucide="trash-2" class="h-4 w-4"></i> Odstrániť krok</button>`;
+    }
+    function renderPanel(){
+      const p = document.getElementById("rightPanel");
+      if (selNode) {
+        const n = flow.find(x => x.id === selNode); const d = NODE[n.t];
+        if (n.t === "questions") p.innerHTML = panelQuestions(n, d);
+        else if (n.t === "branch") p.innerHTML = panelBranch(n, d);
+        else p.innerHTML = panelGeneric(n, d);
+        lucide.createIcons();
+        return;
+      }
+      p.innerHTML = `
+        <div class="text-center">
+          <span class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#003AB8]/10 text-[#003AB8]"><i data-lucide="compass" class="h-6 w-6"></i></span>
+          <h3 class="text-base font-bold">Editor scénára</h3>
+          <p class="mx-auto mt-1 max-w-[260px] text-sm text-muted-foreground">Vyberte krok na scenári, ktorý chcete upraviť, alebo použite „+" pre rozšírenie stromu konverzácie.</p>
+        </div>
+        <p class="mb-2 mt-7 text-xs font-bold tracking-wider text-muted-foreground">TYPY KROKOV</p>
+        <div class="space-y-1">
+          <div class="bstep"><span class="ic" style="background:rgba(0,58,184,.1);color:#003AB8"><i data-lucide="message-square" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold">Téma / Agenda</p><p class="text-xs text-muted-foreground">Definujte témy, scenáre alebo obrazovky, ktorými agent kontakt prevedie.</p></div></div>
+          <div class="bstep"><span class="ic" style="background:rgba(124,58,237,.12);color:#7c3aed"><i data-lucide="help-circle" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold">Sada otázok</p><p class="text-xs text-muted-foreground">Pýtajte sa a vyhodnocujte odpovede. Pridané ideálne odpovede sa započítavajú do skóre zhody.</p></div></div>
+          <div class="bstep"><span class="ic" style="background:#fef3c7;color:#d97706"><i data-lucide="git-branch" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold">Podmienená trasa</p><p class="text-xs text-muted-foreground">Vetvte cestu dynamicky na základe zámeru volajúceho alebo používateľského vstupu.</p></div></div>
+        </div>
+        <p class="mb-2 mt-7 text-xs font-bold tracking-wider text-muted-foreground">PRAVIDLÁ A LIMITY</p>
+        <ul class="space-y-2 text-xs text-muted-foreground">
+          <li class="flex gap-2"><span class="text-[#003AB8]">•</span> Maximálna hĺbka vetvenia je obmedzená na 3 úrovne.</li>
+          <li class="flex gap-2"><span class="text-[#003AB8]">•</span> Nastavením ideálnych odpovedí v krokoch otázok nakonfigurujete metriky hodnotenia.</li>
+        </ul>
+        <p class="mb-2 mt-7 text-xs font-bold tracking-wider text-muted-foreground">SKRATKY</p>
+        <div class="flex items-center gap-4 text-xs text-muted-foreground">
+          <span><kbd class="rounded border border-border bg-muted px-1.5 py-0.5 font-mono">Ctrl</kbd> + <kbd class="rounded border border-border bg-muted px-1.5 py-0.5 font-mono">Z</kbd> Späť</span>
+          <span><kbd class="rounded border border-border bg-muted px-1.5 py-0.5 font-mono">Ctrl</kbd> + <kbd class="rounded border border-border bg-muted px-1.5 py-0.5 font-mono">Y</kbd> Znovu</span>
+        </div>`;
+      lucide.createIcons();
+    }
+    function deleteNode(id){ if (flow.length <= 2) return; flow = flow.filter(x => x.id !== id); selNode = null; renderFlow(); renderPanel(); }
+
+    // node data mutations
+    function updateNodeName(id, v){ const n = flow.find(x => x.id === id); if (n) n.name = v; }
+    function updateQuestion(id, i, k, v){ const n = flow.find(x => x.id === id); if (!n?.questions?.[i]) return; n.questions[i][k] = v; }
+    function addQuestion(id){ const n = flow.find(x => x.id === id); if (!n) return; (n.questions ||= []).push({ q:"", ideal:"" }); renderFlow(); renderPanel(); }
+    function updateRoute(id, i, k, v){ const n = flow.find(x => x.id === id); if (!n?.routes?.[i]) return; n.routes[i][k] = v; if (k === "name") renderFlow(); }
+
+    // deselect on canvas background click
+    document.getElementById("canvas").addEventListener("click", (e) => {
+      if (e.target.closest(".fnode") || e.target.closest(".addpop") || e.target.closest(".braddstep") || e.target.closest(".add")) return;
+      closeAddPop();
+      selNode = null; renderFlow(); renderPanel();
+    });
+
+    // zoom
+    let zoom = 1;
+    const flowInner = document.getElementById("flowInner");
+    const applyZoom = () => { flowInner.style.transformOrigin = "top center"; flowInner.style.transform = `scale(${zoom})`; };
+    document.getElementById("zIn").onclick = () => { zoom = Math.min(1.6, zoom + 0.1); applyZoom(); };
+    document.getElementById("zOut").onclick = () => { zoom = Math.max(0.5, zoom - 0.1); applyZoom(); };
+    document.getElementById("zFit").onclick = () => { zoom = 1; applyZoom(); };
+
+    renderTabs(); renderFlow(); renderPanel();
+    lucide.createIcons();
+  </script>
+</body>
+</html>

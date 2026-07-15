@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InstaView — AI Resume Screening Agent</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          serif: ['"Instrument Serif"', 'ui-serif', 'Georgia', 'serif'],
+          mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        },
+        boxShadow: {
+          'oreo-default': '0 1px 2px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.03)',
+          'oreo-active':  '0 4px 12px -2px rgba(15,23,42,0.08), 0 2px 6px rgba(15,23,42,0.04)',
+          'oreo-float':   '0 12px 32px -12px rgba(15,23,42,0.12), 0 4px 12px -4px rgba(15,23,42,0.06)',
+          'oreo-overlay': '0 24px 48px -12px rgba(15,23,42,0.18), 0 8px 24px -8px rgba(15,23,42,0.08)',
+        },
+      },
+    },
+  };
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "react":            "https://esm.sh/react@18.3.1",
+    "react/jsx-runtime":"https://esm.sh/react@18.3.1/jsx-runtime",
+    "react-dom":        "https://esm.sh/react-dom@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "lucide-react":     "https://esm.sh/lucide-react@0.469.0?deps=react@18.3.1"
+  }
+}
+</script>
+
+<style>
+  html, body, #root { min-height: 100%; }
+  body {
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(96,165,250,0.08), transparent 60%),
+      radial-gradient(1000px 500px at 100% 100%, rgba(244,114,182,0.06), transparent 60%),
+      #ffffff;
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+  .serif-italic {
+    font-family: 'Instrument Serif', ui-serif, Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  .spec-label {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    color: #334155;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+  .spec-label b { color: #0f172a; font-weight: 600; }
+
+  /* Editable prompt area — real textarea, styled */
+  .editable-prompt {
+    display: block;
+    width: 100%;
+    resize: vertical;
+    outline: none;
+    min-height: 110px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1.5px dashed rgba(148,163,184,0.5);
+    background: rgba(255,255,255,0.55);
+    transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    caret-color: #0f172a;
+    color: #0f172a;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+  }
+  .editable-prompt:hover {
+    border-color: rgba(100,116,139,0.7);
+    background: rgba(255,255,255,0.9);
+  }
+  .editable-prompt:focus {
+    border-style: solid;
+    border-color: rgba(15,23,42,0.6);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(15,23,42,0.06);
+  }
+  .editable-prompt::placeholder {
+    color: #94a3b8;
+    opacity: 1;
+  }
+
+  /* CV upload dropzone */
+  .dropzone {
+    border: 2px dashed rgba(148,163,184,0.55);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6)),
+      radial-gradient(400px 200px at 50% 0%, rgba(59,130,246,0.06), transparent 70%);
+    transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+    cursor: pointer;
+  }
+  .dropzone:hover {
+    border-color: rgba(15,23,42,0.5);
+    background:
+      linear-gradient(180deg, #ffffff, rgba(255,255,255,0.85)),
+      radial-gradient(400px 200px at 50% 0%, rgba(59,130,246,0.10), transparent 70%);
+    transform: translateY(-1px);
+  }
+  .dropzone.is-drag {
+    border-color: #0f172a;
+    background: rgba(59,130,246,0.08);
+  }
+
+  /* Toolbar */
+  .toolbar {
+    background: #ffffff;
+    border: 1px solid rgba(226,232,240,0.9);
+    box-shadow:
+      0 8px 20px -8px rgba(15,23,42,0.10),
+      0 2px 4px rgba(15,23,42,0.04),
+      inset 0 1px 0 rgba(255,255,255,0.9);
+  }
+  .toolbar-search {
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    color: #0f172a;
+    width: 100%;
+    letter-spacing: -0.01em;
+  }
+  .toolbar-search::placeholder { color: #94a3b8; }
+
+  /* Liquid Glass — used on prompt, toolbar buttons, chips */
+  .glass {
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow:
+      0 8px 24px -8px rgba(15,23,42,0.08),
+      0 1px 2px rgba(15,23,42,0.04),
+      inset 0 1px 0 rgba(255,255,255,0.7);
+  }
+  .glass-dark {
+    background: rgba(15,23,42,0.9);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+      0 8px 24px -8px rgba(15,23,42,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  /* Row — solid white, clear separation from tray */
+  .row-card {
+    background: #ffffff;
+  }
+
+  /* Tray — soft warm-grey, distinct from row cards */
+  .tray {
+    background: #eef0f4;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+
+  /* Reasoning card — deeper shadow so it lifts off the panel */
+  .reasoning-card {
+    box-shadow:
+      0 12px 28px -8px rgba(15,23,42,0.14),
+      0 6px 12px -4px rgba(15,23,42,0.06),
+      0 1px 3px rgba(15,23,42,0.05),
+      inset 0 1px 0 rgba(255,255,255,0.9);
+    border: 1px solid rgba(226,232,240,0.6);
+  }
+
+  /* Prompt card — strong lifted shadow */
+  .prompt-card {
+    background: #ffffff;
+    border: 1px solid rgba(226,232,240,0.7);
+    box-shadow:
+      0 24px 48px -12px rgba(15,23,42,0.16),
+      0 12px 24px -8px rgba(15,23,42,0.08),
+      0 4px 8px -2px rgba(15,23,42,0.04),
+      0 1px 3px rgba(15,23,42,0.04),
+      inset 0 1px 0 rgba(255,255,255,0.95);
+  }
+  .prompt-card:focus-within {
+    box-shadow:
+      0 28px 56px -12px rgba(15,23,42,0.20),
+      0 14px 28px -8px rgba(15,23,42,0.10),
+      0 4px 8px -2px rgba(15,23,42,0.05),
+      inset 0 1px 0 rgba(255,255,255,0.95);
+  }
+  .prompt-card [contenteditable]:focus { outline: none; }
+
+  /* Criteria pill row */
+  .criteria-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    background: #ffffff;
+    border: 1px solid rgba(226,232,240,0.9);
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 4px 12px -4px rgba(15,23,42,0.06);
+    color: #334155;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .criteria-pill:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(15,23,42,0.05), 0 8px 16px -6px rgba(15,23,42,0.10); }
+  .criteria-pill .dot { width: 6px; height: 6px; border-radius: 999px; }
+  .reasoning-card:hover {
+    box-shadow:
+      0 20px 36px -10px rgba(15,23,42,0.18),
+      0 8px 16px -4px rgba(15,23,42,0.08),
+      0 2px 4px rgba(15,23,42,0.06),
+      inset 0 1px 0 rgba(255,255,255,0.9);
+    transform: translateY(-1px);
+  }
+
+  /* Highlight overlay on CV image — bolder outline, subtle neutral shadow */
+  .cv-hl {
+    position: absolute;
+    border-radius: 8px;
+    box-shadow:
+      inset 0 0 0 2px currentColor,
+      0 2px 6px rgba(15,23,42,0.06),
+      0 8px 20px -6px rgba(15,23,42,0.08);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+    cursor: pointer;
+  }
+  .cv-hl::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0.20;
+    border-radius: inherit;
+    transition: opacity 180ms ease;
+  }
+  .cv-hl:hover::before,
+  .cv-hl.is-active::before { opacity: 0.34; }
+  .cv-hl.is-active {
+    box-shadow:
+      inset 0 0 0 2.5px currentColor,
+      0 0 0 3px rgba(255,255,255,0.9),
+      0 4px 10px rgba(15,23,42,0.08),
+      0 12px 28px -8px rgba(15,23,42,0.14);
+    transform: scale(1.02);
+    z-index: 5;
+  }
+  /* Number badge on each highlight */
+  .cv-hl-num {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: currentColor;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(15,23,42,0.2), 0 0 0 2px white;
+  }
+  .cv-hl-num span { color: #fff; }
+
+  @keyframes expandFade {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .expand-in { animation: expandFade 220ms ease-out both; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<div class="hidden bg-emerald-500 bg-blue-600 bg-red-500 bg-amber-500 bg-pink-500 bg-violet-600 bg-zinc-500
+            text-emerald-500 text-blue-600 text-red-500 text-amber-500 text-pink-500 text-violet-600
+            ring-emerald-200 ring-blue-200 ring-red-200 ring-amber-200 ring-pink-200 ring-violet-200"></div>
+
+<script type="text/babel" data-type="module" data-presets="react">
+import React, { useState, useRef, useLayoutEffect, useEffect, useCallback, useMemo } from 'react';
+import { createRoot } from 'react-dom/client';
+import {
+  BookOpen, BookOpenCheck, MoreHorizontal,
+  ChevronDown, ChevronUp, ArrowUpRight, ArrowLeft,
+  Paperclip, AtSign, ArrowUp,
+  SlidersHorizontal, ArrowDown, ArrowUp as ArrowUpIcon,
+  ChevronLeft, ChevronRight, Check,
+  Upload, Search, FileText,
+  Calendar, PenTool, Rocket, Users, Target, MapPin, Brain, Trophy
+} from 'lucide-react';
+
+/* ============================================================
+   Data generation — 100 candidates
+   ============================================================ */
+const FIRST_NAMES = [
+  'Ľuboš','Ján','Peter','Martin','Jozef','Michal','Andrej','Tomáš','Dávid','Marek',
+  'Lukáš','Adam','Filip','Matúš','Patrik','Šimon','Pavol','Miroslav','Erik','Roman',
+  'Zuzana','Katarína','Mária','Lucia','Petra','Simona','Michaela','Andrea','Veronika','Barbora',
+  'Nikola','Kristína','Natália','Ivana','Dominika','Alexandra','Denisa','Jana','Monika','Silvia',
+  'Jakub','Vojtěch','Ondřej','Matěj','Anna','Eliška','Adéla','Karolína','Klára','Tereza',
+];
+
+const LAST_NAMES = [
+  'Novák','Horváth','Kováč','Varga','Tóth','Nagy','Balog','Molnár','Baláž','Szabó',
+  'Lukáč','Kollár','Blaho','Tomko','Krajči','Habala','Slavík','Fiala','Hrubý','Michalčík',
+  'Svoboda','Novotný','Dvořák','Černý','Procházka','Kučera','Veselý','Krejčí','Horák','Marek',
+  'Polák','Sedláček','Beneš','Zeman','Konečný','Malý','Vlček','Kolář','Urban','Hájek',
+  'Dobrota','Kaňa','Straka','Kozák','Kmec','Rusnák','Šimko','Danko','Ondrejka','Bečka',
+];
+
+/* Criteria extracted from the prompt — each becomes a tag.
+   The colored (matching) chip appears if candidate satisfies it;
+   grey (not-satisfied) chip if they do not. */
+const CRITERIA = [
+  { id: 'yrs',     label: '3+ years',    color: 'emerald', icon: Calendar },
+  { id: 'ux',      label: 'UX/UI',       color: 'red',     icon: PenTool  },
+  { id: 'startup', label: 'AI startup',  color: 'amber',   icon: Rocket   },
+  { id: 'lead',    label: 'leadership',  color: 'violet',  icon: Users    },
+  { id: 'own',     label: 'ownership',   color: 'blue',    icon: Target   },
+  { id: 'loc',     label: 'Bratislava',  color: 'pink',    icon: MapPin   },
+  { id: 'ml',      label: 'ML / AI',     color: 'emerald', icon: Brain    },
+  { id: 'hack',    label: 'hackathon',   color: 'amber',   icon: Trophy   },
+];
+
+/* Deterministic pseudo-random seeded by index */
+function seedRand(seed) {
+  const x = Math.sin(seed * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function stripDia(s) {
+  return s
+    .replace(/[ľĺ]/g,'l').replace(/[š]/g,'s').replace(/[č]/g,'c').replace(/[ť]/g,'t')
+    .replace(/[ď]/g,'d').replace(/[ž]/g,'z').replace(/[áàâä]/g,'a').replace(/[éěê]/g,'e')
+    .replace(/[íî]/g,'i').replace(/[óôö]/g,'o').replace(/[úůü]/g,'u').replace(/[ý]/g,'y')
+    .replace(/[ňñ]/g,'n').replace(/[ř]/g,'r').replace(/[ĺ]/g,'l');
+}
+
+function generateCandidates(n) {
+  const list = [];
+  // First candidate = Ľuboš (matches the CV image + reasoning).
+  // Satisfies 7/8 criteria — only fails Bratislava (lives in Praha).
+  const lubosMatchIds = ['yrs','ux','startup','lead','own','ml','hack'];
+  const lubosNotIds   = ['loc'];
+  list.push({
+    id: 1,
+    name: 'Ľuboš Repka',
+    matching: CRITERIA.filter(c => lubosMatchIds.includes(c.id)),
+    notSatisfied: CRITERIA.filter(c => lubosNotIds.includes(c.id)),
+    percentage: 96,
+    email: 'lubosrepka16@gmail.com',
+    phone: '+421 908 350 321',
+  });
+
+  for (let i = 1; i < n; i++) {
+    const seed = i * 7 + 1;
+    const first = FIRST_NAMES[Math.floor(seedRand(seed) * FIRST_NAMES.length)];
+    const last  = LAST_NAMES[Math.floor(seedRand(seed * 3.1) * LAST_NAMES.length)];
+    const name  = `${first} ${last}`;
+
+    // For each criterion, roll independently whether candidate satisfies it.
+    // Each has a ~50% chance; the count of matches drives the % score.
+    const matching = [];
+    const notSatisfied = [];
+    CRITERIA.forEach((c, cIdx) => {
+      const roll = seedRand(seed * 5.7 + cIdx * 1.9);
+      if (roll > 0.5) matching.push(c);
+      else notSatisfied.push(c);
+    });
+    // Ensure at least 1 in matching (avoid empty)
+    if (matching.length === 0) matching.push(notSatisfied.shift());
+
+    // Percentage weighted by matched count (out of 8 total)
+    const base = Math.round((matching.length / CRITERIA.length) * 100);
+    const jitter = Math.floor(seedRand(seed * 17.3) * 12) - 6; // ±6
+    const percentage = Math.max(20, Math.min(96, base + jitter));
+
+    const slug = stripDia((first + '.' + last).toLowerCase()).replace(/[^a-z.]/g, '');
+    const email = `${slug}@gmail.com`;
+
+    const p1 = 900 + Math.floor(seedRand(seed * 19.1) * 99);
+    const p2 = 100 + Math.floor(seedRand(seed * 23.3) * 900);
+    const p3 = 100 + Math.floor(seedRand(seed * 29.7) * 900);
+    const phone = `+421 ${p1} ${p2} ${p3}`;
+
+    list.push({ id: i + 1, name, matching, notSatisfied, percentage, email, phone });
+  }
+  return list;
+}
+
+const ALL_CANDIDATES = generateCandidates(100);
+
+/* ============================================================
+   Color tokens (dot + solid + soft)
+   ============================================================ */
+const COLOR = {
+  emerald: { dot: '#10b981', bg: 'bg-emerald-500', text: 'text-emerald-600' },
+  blue:    { dot: '#2563eb', bg: 'bg-blue-600',    text: 'text-blue-600' },
+  red:     { dot: '#ef4444', bg: 'bg-red-500',     text: 'text-red-500' },
+  amber:   { dot: '#f59e0b', bg: 'bg-amber-500',   text: 'text-amber-500' },
+  pink:    { dot: '#ec4899', bg: 'bg-pink-500',    text: 'text-pink-500' },
+  violet:  { dot: '#7c3aed', bg: 'bg-violet-600',  text: 'text-violet-600' },
+  muted:   { dot: '#94a3b8', bg: 'bg-zinc-400',    text: 'text-slate-400' },
+};
+
+/* ============================================================
+   Compact chip
+   ============================================================ */
+function TagChip({ color = 'muted', children, muted = false, size = 'sm' }) {
+  const bg = muted ? 'bg-zinc-300' : COLOR[color].bg;
+  const sizeCls = size === 'xs' ? 'text-[10px] px-1.5 py-0.5' : 'text-[10.5px] px-2 py-[3px]';
+  return (
+    <span className={`inline-flex items-center gap-0.5 font-semibold text-white ${bg} ${sizeCls} rounded-full tracking-tight shrink-0`}>
+      <span className="opacity-70">#</span>
+      {children}
+    </span>
+  );
+}
+
+/* ============================================================
+   Progress ring — prominent
+   ============================================================ */
+function ProgressRing({ value = 75, size = 44 }) {
+  const tone = value >= 80 ? 'emerald' : value >= 55 ? 'amber' : 'red';
+  const stroke = { emerald: 'text-emerald-500', amber: 'text-amber-500', red: 'text-red-500' }[tone];
+  const fontPx = size >= 44 ? 12 : size >= 36 ? 10 : 8.5;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+        <path className="text-slate-100" strokeWidth="3" stroke="currentColor" fill="none"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        <path className={stroke} strokeWidth="3"
+              strokeDasharray={`${value}, 100`} strokeLinecap="round" stroke="currentColor" fill="none"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span
+          className="font-bold text-slate-900 tracking-tight tabular-nums"
+          style={{ fontSize: `${fontPx}px` }}
+        >
+          {value}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   OREO mark
+   ============================================================ */
+function OreoMark() {
+  return (
+    <div className="flex items-center">
+      <span className="w-3 h-3 rounded-full bg-slate-900" />
+      <span className="w-3 h-3 rounded-full bg-slate-900 -ml-1" />
+      <span className="w-3 h-3 rounded-full bg-slate-900 -ml-1" />
+    </div>
+  );
+}
+
+/* ============================================================
+   Prompt — job description editor + CV dropzone + criteria
+   ============================================================ */
+function CriteriaPill({ item }) {
+  const c = COLOR[item.color];
+  const Icon = item.icon;
+  return (
+    <span className="criteria-pill" title={item.label}>
+      <Icon className="w-3 h-3" style={{ color: c.dot }} />
+      <span>{item.label}</span>
+      <span className="dot" style={{ background: c.dot }} />
+    </span>
+  );
+}
+
+const PROMPT_PLACEHOLDER =
+  'Napíš mi sem podľa čoho mám kandidátov zoradiť a čo je dôležité, aby som analyzoval.\n\n' +
+  'Napríklad: hľadám senior product designera s 3+ rokmi v AI startupe, dôležitý je UX/UI, ' +
+  'leadership a ownership. Lokalita: Bratislava alebo remote. Zoraď podľa najlepšej zhody…';
+
+const EXAMPLE_PROMPT_TEXT =
+  'Hľadám senior product designera s 3+ rokmi skúseností v AI startupe. ' +
+  'Nutné: UX/UI, leadership (aspoň 3-členný tím), ownership produktu. ' +
+  'Lokalita: Bratislava alebo remote. Bonus: ML/AI skúsenosti, víťaz hackathonu. ' +
+  'Zoraď kandidátov podľa najlepšej zhody a vyhoď tých čo nespĺňajú aspoň 4 kritériá.';
+
+function Prompt() {
+  const [isDragging, setIsDragging] = useState(false);
+  const [fileCount, setFileCount] = useState(23);
+  const [promptText, setPromptText] = useState('');
+  const promptRef = useRef(null);
+
+  const isEmpty = promptText.trim().length === 0;
+
+  const insertExample = () => {
+    setPromptText(EXAMPLE_PROMPT_TEXT);
+    setTimeout(() => promptRef.current && promptRef.current.focus(), 0);
+  };
+
+  const clearPrompt = () => {
+    setPromptText('');
+    setTimeout(() => promptRef.current && promptRef.current.focus(), 0);
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') setIsDragging(true);
+    else if (e.type === 'dragleave') setIsDragging(false);
+  };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (files.length) setFileCount(n => n + files.length);
+  };
+  const handlePick = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length) setFileCount(n => n + files.length);
+  };
+
+  return (
+    <div className="w-full max-w-2xl flex flex-col gap-4">
+      {/* Main prompt card */}
+      <div className="prompt-card rounded-2xl overflow-hidden">
+        <div className="px-5 pt-4 pb-3">
+          <div className="spec-label mb-3 uppercase tracking-wider">Zadanie · popíš koho hľadáš</div>
+          <textarea
+            ref={promptRef}
+            value={promptText}
+            onChange={(e) => setPromptText(e.target.value)}
+            placeholder={PROMPT_PLACEHOLDER}
+            spellCheck={false}
+            rows={4}
+            aria-label="Job description prompt"
+            className="editable-prompt"
+          />
+        </div>
+        <div className="flex items-center justify-between px-4 pb-3 border-t border-slate-100 pt-3 gap-3">
+          <div className="text-[11.5px] text-slate-500 font-medium flex items-center gap-3 flex-wrap">
+            <span className="inline-flex items-center gap-1.5">
+              <kbd className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-200 rounded text-slate-700">Enter</kbd>
+              spustí analýzu
+            </span>
+            {isEmpty ? (
+              <button
+                onClick={insertExample}
+                className="text-[11.5px] font-medium text-slate-700 hover:text-slate-900 underline underline-offset-2 decoration-slate-300 hover:decoration-slate-500"
+              >
+                vlož príklad zadania
+              </button>
+            ) : (
+              <button
+                onClick={clearPrompt}
+                className="text-[11.5px] font-medium text-slate-500 hover:text-slate-800 underline underline-offset-2 decoration-slate-300 hover:decoration-slate-500"
+              >
+                vymazať
+              </button>
+            )}
+          </div>
+          <button
+            title="Spustiť analýzu"
+            className="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center hover:bg-slate-800 transition shadow-oreo-active shrink-0"
+          >
+            <ArrowUp className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* CV Dropzone — prominent, obviously interactive */}
+      <label
+        onDragEnter={handleDrag}
+        onDragOver={handleDrag}
+        onDragLeave={handleDrag}
+        onDrop={handleDrop}
+        className={`dropzone rounded-2xl px-5 py-4 flex items-center gap-4 ${isDragging ? 'is-drag' : ''}`}
+      >
+        <div className="w-14 h-14 rounded-xl bg-white shadow-oreo-active flex items-center justify-center text-slate-800 shrink-0 border border-slate-200/60">
+          <Upload className="w-6 h-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[15px] font-semibold text-slate-900 leading-tight">
+            Pripoj životopisy kandidátov
+          </div>
+          <div className="text-[12.5px] text-slate-500 mt-1 leading-snug">
+            Presuň sem <b className="text-slate-700">PDF</b> / <b className="text-slate-700">DOCX</b> súbory, alebo klikni pre výber. Agent ich prejde a napáruje na kritériá vyššie.
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <div className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-800 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-oreo-default">
+            <FileText className="w-3.5 h-3.5 text-emerald-600" />
+            {fileCount} pripojených
+          </div>
+          <div className="text-[10.5px] font-mono text-slate-500">max 20 MB / súbor</div>
+        </div>
+        <input
+          type="file"
+          multiple
+          accept=".pdf,.doc,.docx"
+          className="hidden"
+          onChange={handlePick}
+        />
+      </label>
+
+      {/* Extracted criteria — becomes the tag set */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="spec-label uppercase tracking-wider">Kritériá extrahované z promptu</span>
+          <span className="text-[12px] text-slate-600">
+            — v tabuľke <span className="text-emerald-700 font-semibold">farebné</span> = kandidát spĺňa · <span className="text-slate-700 font-semibold">sivé</span> = nespĺňa
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {CRITERIA.map(c => <CriteriaPill key={c.id} item={c} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   CV highlight coordinates (percentages of 1600×2260 image)
+   ============================================================ */
+const CV_HIGHLIGHTS = [
+  // About line 4 — "numbers and Excel are my best friends"
+  { id: 'h_data',     color: 'emerald', x: 46,   y: 33.4, w: 30,   h: 1.9 },
+  // instaview line 1 — "an AI startup"
+  { id: 'h_startup',  color: 'amber',   x: 61,   y: 40.4, w: 11,   h: 1.9 },
+  // instaview line 2 — "product design (UX/UI)"
+  { id: 'h_design',   color: 'red',     x: 51.5, y: 41.6, w: 19,   h: 1.9 },
+  // Inovatrics line 3 — "AI UX/UI design"
+  { id: 'h_design2',  color: 'red',     x: 55,   y: 52.4, w: 16,   h: 1.9 },
+  // Tatra lines 3-4 — "team leader ... coordinating 5 people"
+  { id: 'h_leader',   color: 'violet',  x: 47,   y: 62,   w: 30,   h: 3.2 },
+  // T-Mobile line 4 — "and UI design"
+  { id: 'h_design3',  color: 'red',     x: 47,   y: 73.4, w: 14,   h: 1.9 },
+  // Aliter line 1 — "patient recognition"
+  { id: 'h_research', color: 'emerald', x: 55,   y: 80.7, w: 22,   h: 1.9 },
+  // Award — "1st place – Challenge for Agel Hospitals"
+  { id: 'h_award',    color: 'amber',   x: 34,   y: 90.1, w: 40,   h: 1.6 },
+];
+
+const REASONING = [
+  {
+    id: 'h_data', color: 'emerald', tag: 'ML / AI',
+    criterion: 'Analytické základy pre ML/AI',
+    evidence: 'About me: „numbers and Excel are my best friends"',
+    text: 'Explicitne uvádza komfort s dátami + skill „Data analysis & performance reporting". Analytické myslenie je základom pre ML/AI role — kandidát vie štruktúrovane pracovať s číslami, nie len s intuíciou.',
+  },
+  {
+    id: 'h_startup', color: 'amber', tag: 'AI startup',
+    criterion: 'AI startup skúsenosť',
+    evidence: 'instaview · Sep 2024 – Present',
+    text: 'Co-founder AI startupu — spĺňa kritérium „AI startup" v najsilnejšom variante (ownership, nielen zamestnanec). Vedie sales, marketing aj produkt.',
+  },
+  {
+    id: 'h_design', color: 'red', tag: 'UX/UI',
+    criterion: 'UX/UI design ownership',
+    evidence: 'instaview: „Leading … product design (UX/UI)"',
+    text: 'Ownership produktového dizajnu v aktuálnom projekte — designer-owner, nie exekútor. Priama zhoda s kritériom „UX/UI" v senior kontexte.',
+  },
+  {
+    id: 'h_design2', color: 'red', tag: 'UX/UI',
+    criterion: 'UX/UI v AI produkte',
+    evidence: 'Inovatrics · Jan – Apr 2024',
+    text: 'Dizajnoval AI UX/UI pre celú aplikáciu Inovatrics. Druhý dôkaz „UX/UI" kritéria — konkrétne v AI kontexte, ktorý sedí k profilu inzerovanej roly.',
+  },
+  {
+    id: 'h_leader', color: 'violet', tag: 'leadership',
+    criterion: 'Vedenie 3+ členného tímu',
+    evidence: 'Tatra banka · team leader (5 ľudí)',
+    text: 'Koordinácia 5-členného tímu na blockchain projekte pre Tatra banku. Spĺňa požiadavku „leadership (aspoň 3-členný tím)" s rezervou.',
+  },
+  {
+    id: 'h_design3', color: 'red', tag: 'UX/UI',
+    criterion: 'Enterprise UX/UI delivery',
+    evidence: 'T-Mobile · Feb – Jun 2023',
+    text: 'UX/UI pre interný tracking tool T-Mobile. Tretie potvrdenie „UX/UI" kritéria — tentoraz s reálnym enterprise doručením.',
+  },
+  {
+    id: 'h_research', color: 'emerald', tag: 'ML / AI',
+    criterion: 'Aplikovaný ML/AI',
+    evidence: 'Aliter technologies · patient recognition',
+    text: 'Vylepšenie systému rozpoznávania pacientov pri COVID-19 — aplikovaný ML/AI výskum v medicínskom kontexte. Druhý dôkaz „ML / AI" kritéria.',
+  },
+  {
+    id: 'h_award', color: 'amber', tag: 'hackathon',
+    criterion: 'Víťaz hackathonu',
+    evidence: '1st place · Hack SLOVAKIA 2023 (Agel)',
+    text: 'Víťaz Challenge for Agel Hospitals + 2× víťaz ETH Hackathon Bratislava. Spĺňa bonusové kritérium „hackathon" opakovane — doručí riešenie v obmedzenom čase.',
+  },
+];
+
+/* ============================================================
+   Expanded profile — CV image + reasoning + connector lines
+   ============================================================ */
+function ExpandedProfile() {
+  const containerRef = useRef(null);
+  const hlRefs = useRef({});
+  const noteRefs = useRef({});
+  const [lines, setLines] = useState([]);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const [activeId, setActiveId] = useState(null);
+
+  const registerHl   = useCallback((id, el) => { if (el) hlRefs.current[id] = el; }, []);
+  const registerNote = useCallback((id, el) => { if (el) noteRefs.current[id] = el; }, []);
+
+  const recompute = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const cRect = container.getBoundingClientRect();
+    setSize({ w: cRect.width, h: cRect.height });
+
+    const next = [];
+    REASONING.forEach(r => {
+      const h = hlRefs.current[r.id];
+      const n = noteRefs.current[r.id];
+      if (!h || !n) return;
+      const hR = h.getBoundingClientRect();
+      const nR = n.getBoundingClientRect();
+      const x1 = hR.right - cRect.left;
+      const y1 = hR.top + hR.height / 2 - cRect.top;
+      const x2 = nR.left  - cRect.left;
+      const y2 = nR.top + nR.height / 2 - cRect.top;
+      next.push({ id: r.id, color: COLOR[r.color].dot, x1, y1, x2, y2 });
+    });
+    setLines(next);
+  }, []);
+
+  useLayoutEffect(() => {
+    recompute();
+    const t1 = setTimeout(recompute, 80);
+    const t2 = setTimeout(recompute, 300);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [recompute]);
+
+  useEffect(() => {
+    const ro = new ResizeObserver(() => recompute());
+    if (containerRef.current) ro.observe(containerRef.current);
+    window.addEventListener('resize', recompute);
+    return () => { ro.disconnect(); window.removeEventListener('resize', recompute); };
+  }, [recompute]);
+
+  return (
+    <div className="expand-in mx-1 mb-1">
+      <div ref={containerRef} className="relative grid grid-cols-[minmax(0,420px)_minmax(0,1fr)] gap-16 p-3">
+
+        {/* ============ CV IMAGE with positioned highlights ============ */}
+        <div className="relative rounded-xl overflow-hidden shadow-oreo-active border border-slate-200/70"
+             style={{ aspectRatio: '1600 / 2260', background: '#f8fafc' }}>
+          <img
+            src="cv-lubos.png"
+            alt="CV — Ľuboš Repka"
+            className="w-full h-full block select-none pointer-events-none"
+            draggable={false}
+          />
+          {CV_HIGHLIGHTS.map(h => {
+            const rIdx = REASONING.findIndex(r => r.id === h.id);
+            return (
+              <div
+                key={h.id}
+                ref={el => registerHl(h.id, el)}
+                onMouseEnter={() => setActiveId(h.id)}
+                onMouseLeave={() => setActiveId(null)}
+                className={`cv-hl ${activeId === h.id ? 'is-active' : ''}`}
+                style={{
+                  left:   `${h.x}%`,
+                  top:    `${h.y}%`,
+                  width:  `${h.w}%`,
+                  height: `${h.h}%`,
+                  color:  COLOR[h.color].dot,
+                }}
+                title={REASONING.find(r => r.id === h.id)?.text}
+              >
+                <div className="cv-hl-num"><span>{rIdx + 1}</span></div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ============ REASONING PANEL ============ */}
+        <div className="flex flex-col gap-2.5 pt-1">
+          <div className="mb-1">
+            <div className="text-[13px] font-semibold text-slate-900 tracking-tight">Prečo agent dal tieto tagy</div>
+            <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1 flex-wrap">
+              <span>Kritérium</span>
+              <ArrowLeft className="w-3 h-3 text-slate-400" />
+              <span>dôkaz v CV</span>
+            </div>
+          </div>
+          {REASONING.map((r, i) => {
+            const c = COLOR[r.color];
+            const isActive = activeId === r.id;
+            return (
+              <div
+                key={r.id}
+                ref={el => registerNote(r.id, el)}
+                onMouseEnter={() => setActiveId(r.id)}
+                onMouseLeave={() => setActiveId(null)}
+                className={`reasoning-card rounded-xl px-3.5 py-3 transition cursor-pointer bg-white
+                  ${isActive ? 'is-active' : ''}`}
+                style={isActive ? { boxShadow: `0 20px 40px -12px ${c.dot}55, 0 8px 16px -4px rgba(15,23,42,0.12), 0 2px 4px rgba(15,23,42,0.06), inset 0 0 0 1.5px ${c.dot}` } : {}}
+              >
+                {/* Header row: number, tag, criterion */}
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 shadow-sm"
+                        style={{ background: c.dot }}>
+                    {i + 1}
+                  </span>
+                  <TagChip color={r.color} size="xs">{r.tag}</TagChip>
+                  <span className="text-[11px] font-semibold text-slate-700 truncate">{r.criterion}</span>
+                </div>
+
+                {/* Evidence quote */}
+                <div className="flex items-start gap-1.5 mb-1.5 pl-1 border-l-2 pl-2" style={{ borderColor: c.dot + '80' }}>
+                  <span className="text-[10.5px] font-mono text-slate-500 leading-snug">{r.evidence}</span>
+                </div>
+
+                {/* Explanation */}
+                <p className="text-[11.5px] leading-relaxed text-slate-600">{r.text}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ============ CONNECTOR LINES (SVG overlay) ============ */}
+        {size.w > 0 && (
+          <svg
+            className="absolute inset-0 pointer-events-none"
+            width={size.w}
+            height={size.h}
+            viewBox={`0 0 ${size.w} ${size.h}`}
+          >
+            <defs>
+              {lines.map(l => (
+                <marker
+                  key={`m-${l.id}`}
+                  id={`arrow-${l.id}`}
+                  viewBox="0 0 10 10"
+                  refX="8" refY="5"
+                  markerWidth="6" markerHeight="6"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill={l.color} />
+                </marker>
+              ))}
+            </defs>
+            {lines.map(l => {
+              const dx = Math.max(50, (l.x2 - l.x1) * 0.55);
+              const d  = `M ${l.x1} ${l.y1} C ${l.x1 + dx} ${l.y1}, ${l.x2 - dx} ${l.y2}, ${l.x2} ${l.y2}`;
+              const active = activeId === l.id;
+              return (
+                <g key={l.id}>
+                  {/* soft glow underlay */}
+                  <path d={d} fill="none" stroke={l.color}
+                        strokeWidth={active ? 6 : 3}
+                        strokeOpacity={active ? 0.18 : 0.08}
+                        strokeLinecap="round" />
+                  {/* main dashed line */}
+                  <path d={d} fill="none" stroke={l.color}
+                        strokeWidth={active ? 2.4 : 1.7}
+                        strokeOpacity={active ? 1 : 0.65}
+                        strokeDasharray="6 5"
+                        strokeLinecap="round"
+                        markerEnd={`url(#arrow-${l.id})`} />
+                  {/* start anchor dot */}
+                  <circle cx={l.x1} cy={l.y1} r={active ? 4 : 3} fill={l.color} opacity={active ? 1 : 0.85} />
+                  <circle cx={l.x1} cy={l.y1} r={active ? 6 : 4.5} fill={l.color} opacity={active ? 0.25 : 0.15} />
+                </g>
+              );
+            })}
+          </svg>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Row — compact
+   ============================================================ */
+function Row({ candidate, expanded, onToggle }) {
+  return (
+    <div
+      className={`row-card rounded-xl border transition
+        ${expanded
+          ? 'border-slate-200 shadow-oreo-float'
+          : 'border-slate-100/80 shadow-oreo-default hover:shadow-oreo-active hover:border-slate-200'}`}
+    >
+      <div className="grid grid-cols-[1.5fr_0.7fr_2.2fr_1.5fr_1.1fr_2.2fr_auto] gap-3 items-center py-2 px-4">
+        {/* Name */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <input type="checkbox"
+                 className="w-3.5 h-3.5 rounded border-slate-300 text-slate-900 focus:ring-slate-400 cursor-pointer shrink-0" />
+          <span className="text-[13px] font-semibold text-slate-900 truncate">{candidate.name}</span>
+        </div>
+
+        {/* CV — expand toggle (centered, prominent) */}
+        <div className="flex justify-center">
+          <button
+            onClick={onToggle}
+            title={expanded ? 'Zavrieť CV' : 'Otvoriť CV a AI reasoning'}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition shrink-0 border shadow-oreo-default
+              ${expanded
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-100'}`}
+          >
+            {expanded ? <BookOpenCheck className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {/* Matching — max 3 chips, +N indicator */}
+        <div className="flex items-center gap-1 flex-nowrap pr-1 min-w-0">
+          {candidate.matching.slice(0, 3).map((b, i) => (
+            <TagChip key={i} color={b.color} size="xs">{b.label}</TagChip>
+          ))}
+          {candidate.matching.length > 3 && (
+            <button
+              onClick={onToggle}
+              title={`+${candidate.matching.length - 3} splnených kritérií — otvor CV`}
+              className="text-[10.5px] font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-[3px] rounded-full transition shrink-0"
+            >
+              +{candidate.matching.length - 3}
+            </button>
+          )}
+        </div>
+
+        {/* Not satisfied — max 2 chips, +N indicator */}
+        <div className="flex items-center gap-1 flex-nowrap pr-1 min-w-0">
+          {candidate.notSatisfied.slice(0, 2).map((b, i) => (
+            <TagChip key={i} muted size="xs">{b.label}</TagChip>
+          ))}
+          {candidate.notSatisfied.length > 2 && (
+            <button
+              onClick={onToggle}
+              title={`+${candidate.notSatisfied.length - 2} nesplnených — otvor CV`}
+              className="text-[10.5px] font-semibold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2 py-[3px] rounded-full transition shrink-0"
+            >
+              +{candidate.notSatisfied.length - 2}
+            </button>
+          )}
+        </div>
+
+        {/* Percentage — prominent focus */}
+        <div className="flex items-center justify-center gap-2">
+          <ProgressRing value={candidate.percentage} size={44} />
+        </div>
+
+        {/* Contact */}
+        <div className="flex items-center justify-between gap-3 min-w-0">
+          <div className="flex flex-col min-w-0">
+            <a href={`mailto:${candidate.email}`}
+               className="text-[11.5px] font-semibold text-slate-900 hover:text-slate-600 truncate leading-tight">
+              {candidate.email}
+            </a>
+            <span className="text-[10.5px] text-slate-500 font-medium mt-0.5 leading-tight">
+              {candidate.phone}
+            </span>
+          </div>
+          <button
+            onClick={onToggle}
+            className="flex items-center gap-1 text-[11px] font-semibold text-slate-900 hover:text-slate-600 shrink-0 transition group"
+          >
+            Open
+            <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </button>
+        </div>
+
+        {/* Toggle chevron */}
+        <button
+          onClick={onToggle}
+          className="w-6 h-6 rounded-md border border-slate-200 hover:border-slate-300 hover:bg-slate-50 flex items-center justify-center text-slate-500 transition"
+          aria-label="Toggle profile"
+        >
+          {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="px-3 pb-3">
+          <ExpandedProfile />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   Sort control
+   ============================================================ */
+const SORT_OPTIONS = [
+  { id: 'match-desc', label: 'Zhoda', icon: ArrowDown },
+  { id: 'match-asc',  label: 'Zhoda', icon: ArrowUpIcon },
+  { id: 'name-asc',   label: 'Meno A–Z', icon: null },
+  { id: 'name-desc',  label: 'Meno Z–A', icon: null },
+];
+
+function SortControl({ value, onChange }) {
+  return (
+    <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-1 shadow-oreo-default">
+      {SORT_OPTIONS.map(o => {
+        const active = value === o.id;
+        const Icon = o.icon;
+        return (
+          <button
+            key={o.id}
+            onClick={() => onChange(o.id)}
+            className={`flex items-center gap-1 text-[11.5px] font-medium px-2.5 py-1 rounded-md transition
+              ${active ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}
+          >
+            {o.label}
+            {Icon && <Icon className="w-3 h-3" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ============================================================
+   Pagination
+   ============================================================ */
+function Pagination({ page, totalPages, onPage }) {
+  const goto = (p) => onPage(Math.max(1, Math.min(totalPages, p)));
+  // Build page number list with ellipses
+  const pages = [];
+  const window = 1;
+  const add = (n) => pages.push(n);
+  const addEllipsis = () => pages.push('…');
+  add(1);
+  if (page - window > 2) addEllipsis();
+  for (let i = Math.max(2, page - window); i <= Math.min(totalPages - 1, page + window); i++) add(i);
+  if (page + window < totalPages - 1) addEllipsis();
+  if (totalPages > 1) add(totalPages);
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => goto(page - 1)}
+        disabled={page === 1}
+        className="w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft className="w-3.5 h-3.5" />
+      </button>
+      {pages.map((p, i) =>
+        p === '…' ? (
+          <span key={i} className="w-6 text-center text-slate-400 text-[11px]">…</span>
+        ) : (
+          <button
+            key={i}
+            onClick={() => goto(p)}
+            className={`min-w-[28px] h-7 px-2 rounded-md text-[11.5px] font-semibold transition
+              ${p === page
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            {p}
+          </button>
+        )
+      )}
+      <button
+        onClick={() => goto(page + 1)}
+        disabled={page === totalPages}
+        className="w-7 h-7 rounded-md border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/* ============================================================
+   Main
+   ============================================================ */
+function ResumeScreeningDashboard() {
+  const [sortBy, setSortBy]         = useState('match-desc');
+  const [page, setPage]             = useState(1);
+  const [expandedId, setExpandedId] = useState(1); // Ľuboš expanded by default
+  const [search, setSearch]         = useState('');
+  const [filterIds, setFilterIds]   = useState(new Set()); // criterion ids to require
+  const [exportedAt, setExportedAt] = useState(0);
+  const perPage = 12;
+
+  const handleExport = () => {
+    setExportedAt(Date.now());
+    setTimeout(() => setExportedAt(0), 1800);
+  };
+
+  const toggleFilter = (id) => {
+    setFilterIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setPage(1);
+    setExpandedId(null);
+  };
+
+  const filtered = useMemo(() => {
+    let list = ALL_CANDIDATES;
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      list = list.filter(c => c.name.toLowerCase().includes(q));
+    }
+    if (filterIds.size > 0) {
+      list = list.filter(c =>
+        [...filterIds].every(fid => c.matching.some(m => m.id === fid))
+      );
+    }
+    return list;
+  }, [search, filterIds]);
+
+  const sorted = useMemo(() => {
+    const list = [...filtered];
+    switch (sortBy) {
+      case 'match-desc': return list.sort((a, b) => b.percentage - a.percentage);
+      case 'match-asc':  return list.sort((a, b) => a.percentage - b.percentage);
+      case 'name-asc':   return list.sort((a, b) => a.name.localeCompare(b.name, 'sk'));
+      case 'name-desc':  return list.sort((a, b) => b.name.localeCompare(a.name, 'sk'));
+      default: return list;
+    }
+  }, [filtered, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / perPage));
+  const safePage   = Math.min(page, totalPages);
+  const rows       = sorted.slice((safePage - 1) * perPage, safePage * perPage);
+  const rangeFrom  = sorted.length === 0 ? 0 : (safePage - 1) * perPage + 1;
+  const rangeTo    = Math.min(safePage * perPage, sorted.length);
+
+  return (
+    <div className="min-h-screen font-sans text-slate-900">
+      <div className="max-w-[1500px] mx-auto px-8 lg:px-12 py-10 flex flex-col gap-12">
+
+        {/* TOP BAR */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-5 text-[12px]">
+            <span className="font-semibold text-slate-900 tracking-tight">INSTAVIEW</span>
+            <span className="text-slate-400">Agent</span>
+            <span className="text-slate-400">/</span>
+            <span className="text-slate-400">Resume Screening</span>
+          </div>
+          <OreoMark />
+        </div>
+
+        {/* HEADER */}
+        <div className="flex flex-col gap-3">
+          <div className="spec-label">Inter / Semibold / 40</div>
+          <h1 className="text-[40px] leading-[1.05] font-semibold tracking-tight text-slate-900">
+            AI Resume Screening <span className="serif-italic">Agent</span>
+          </h1>
+          <p className="text-[14px] leading-relaxed text-slate-500 max-w-lg">
+            Nahraj životopisy a agent ich automaticky vyhodnotí voči tvojim kritériám —
+            s vysvetlením prečo kandidát sedí alebo nesedí.
+          </p>
+        </div>
+
+        {/* PROMPT */}
+        <Prompt />
+
+        {/* RESULTS */}
+        <div className="flex flex-col gap-4">
+
+          {/* Section title */}
+          <div className="flex items-end justify-between flex-wrap gap-3">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-baseline gap-2.5">
+                <h2 className="text-[24px] leading-tight font-semibold tracking-tight text-slate-900">
+                  Kandidáti
+                </h2>
+                <span className="text-[13px] font-medium text-slate-500">
+                  {sorted.length} zo {ALL_CANDIDATES.length} · zobrazuje sa {rangeFrom}–{rangeTo}
+                </span>
+              </div>
+              <div className="text-[12px] text-slate-500 inline-flex items-center gap-1">
+                Klikni na <BookOpen className="inline w-3.5 h-3.5 text-amber-600" /> pre CV a AI reasoning
+              </div>
+            </div>
+          </div>
+
+          {/* ====== TOOLBAR ====== */}
+          <div className="toolbar rounded-2xl p-3 flex flex-col gap-3">
+            {/* Row 1: Search + Sort + Export */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Search input */}
+              <div className="flex items-center gap-2 flex-1 min-w-[240px] bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                <Search className="w-4 h-4 text-slate-500 shrink-0" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); setExpandedId(null); }}
+                  placeholder="Hľadaj meno kandidáta…"
+                  className="toolbar-search"
+                />
+                {search && (
+                  <button
+                    onClick={() => { setSearch(''); setPage(1); }}
+                    className="text-[11px] font-mono text-slate-500 hover:text-slate-900 shrink-0"
+                    title="Vymazať"
+                  >
+                    clear
+                  </button>
+                )}
+              </div>
+
+              {/* Sort */}
+              <SortControl
+                value={sortBy}
+                onChange={(v) => { setSortBy(v); setPage(1); setExpandedId(null); }}
+              />
+
+              {/* Export */}
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-1.5 text-[13px] font-medium text-white bg-slate-900 hover:bg-slate-800 shadow-oreo-default px-3 py-2 rounded-lg transition min-w-[104px] justify-center"
+              >
+                {exportedAt ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    Exportované
+                  </>
+                ) : (
+                  <>
+                    Export {sorted.length}
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Row 2: Filter chips by criterion */}
+            <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-slate-100 -mx-3 px-3 -mb-1 pb-0">
+              <div className="flex items-center gap-1.5 text-[11.5px] font-semibold text-slate-600 shrink-0 pr-1">
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                Filter:
+              </div>
+              {CRITERIA.map(c => {
+                const active = filterIds.has(c.id);
+                const col = COLOR[c.color];
+                const Icon = c.icon;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => toggleFilter(c.id)}
+                    className={`inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1 rounded-full border transition
+                      ${active
+                        ? 'text-white border-transparent shadow-oreo-default'
+                        : 'text-slate-600 bg-white border-slate-200 hover:border-slate-300 hover:text-slate-900'}`}
+                    style={active ? { background: col.dot } : {}}
+                  >
+                    <Icon className="w-3 h-3" style={active ? {} : { color: col.dot }} />
+                    {c.label}
+                    {active && <Check className="w-3 h-3" />}
+                  </button>
+                );
+              })}
+              {filterIds.size > 0 && (
+                <button
+                  onClick={() => { setFilterIds(new Set()); setPage(1); }}
+                  className="text-[11px] font-mono text-slate-500 hover:text-slate-900 underline underline-offset-2 ml-1"
+                >
+                  vymazať filter ({filterIds.size})
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="tray rounded-[28px] p-3 sm:p-4">
+            {/* Table header */}
+            <div className="grid grid-cols-[1.5fr_0.7fr_2.2fr_1.5fr_1.1fr_2.2fr_auto] gap-3 items-center px-4 py-2">
+              {['Meno a priezvisko','CV','Matching criteria','Criteria not satisfied','%','Kontaktné info',''].map((h, i) => (
+                <div key={i}
+                     className="spec-label uppercase tracking-wider"
+                     style={{ textAlign: (i === 1 || i === 4) ? 'center' : (i === 5 ? 'right' : 'left') }}>
+                  {h}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              {rows.length === 0 ? (
+                <div className="bg-white rounded-xl border border-slate-100 py-12 flex flex-col items-center gap-2 text-center">
+                  <Search className="w-6 h-6 text-slate-300" />
+                  <div className="text-[14px] font-semibold text-slate-700">Žiadny kandidát nezodpovedá filtrom</div>
+                  <div className="text-[12px] text-slate-500 max-w-xs">
+                    Skús vymazať filter alebo zmeniť hľadanie. V dátovej sade je {ALL_CANDIDATES.length} kandidátov.
+                  </div>
+                </div>
+              ) : (
+                rows.map((c) => (
+                  <Row
+                    key={c.id}
+                    candidate={c}
+                    expanded={expandedId === c.id}
+                    onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Pagination footer */}
+          {sorted.length > 0 && (
+            <div className="flex items-center justify-between flex-wrap gap-3 mt-1">
+              <span className="text-[12px] text-slate-500 font-medium">
+                Strana <b className="text-slate-800">{safePage}</b> z {totalPages} · {rangeFrom}–{rangeTo} zo {sorted.length}
+              </span>
+              <Pagination
+                page={safePage}
+                totalPages={totalPages}
+                onPage={(p) => { setPage(p); setExpandedId(null); }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* FOOTER */}
+        <div className="flex items-center justify-between pt-4 border-t border-slate-100 text-[11px] text-slate-400">
+          <span>© InstaView 2026</span>
+          <a href="#" className="hover:text-slate-800 transition inline-flex items-center gap-1">
+            Follow us on X
+            <ArrowUpRight className="w-3 h-3" />
+          </a>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')).render(<ResumeScreeningDashboard />);
+</script>
+
+</body>
+</html>

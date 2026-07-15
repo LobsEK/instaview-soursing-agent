@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InstaView Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            border: "hsl(240 5.9% 90%)",
+            background: "hsl(240 4.8% 95.9%)",
+            foreground: "hsl(240 10% 3.9%)",
+            card: "hsl(0 0% 100%)",
+            muted: "hsl(240 4.8% 95.9%)",
+            "muted-foreground": "hsl(240 5% 28%)",
+          },
+          borderRadius: {
+            sm: "calc(0.625rem - 4px)",
+            md: "calc(0.625rem - 2px)",
+            lg: "0.625rem",
+            xl: "calc(0.625rem + 4px)",
+          },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { background: hsl(240 4.8% 95.9%); }
+  </style>
+</head>
+<body class="text-foreground">
+  <div class="flex min-h-screen bg-background text-foreground">
+    <!-- Sidebar -->
+    <aside class="flex w-64 shrink-0 flex-col border-r border-border bg-card">
+      <div class="flex items-center justify-between px-5 py-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="users" class="h-6 w-6 text-[#003AB8]"></i>
+          <span class="text-xl font-bold text-[#003AB8]">instaview</span>
+        </div>
+        <i data-lucide="panel-left-close" class="h-5 w-5 text-muted-foreground"></i>
+      </div>
+
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+
+      <div class="px-4 py-3">
+        <p class="mb-1 text-xs text-muted-foreground">Current Company</p>
+        <button class="flex w-full items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm">
+          <span class="flex items-center gap-2">
+            <span class="flex h-6 w-6 items-center justify-center rounded bg-[#003AB8]/20 text-xs font-semibold text-[#003AB8]">TE</span>
+            Testovanie 2
+          </span>
+          <i data-lucide="chevrons-up-down" class="h-4 w-4 text-muted-foreground"></i>
+        </button>
+      </div>
+
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+
+      <div class="px-4 py-4">
+        <div class="flex items-center justify-between rounded-lg border border-[#003AB8]/30 bg-[#003AB8]/10 px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sparkles" class="h-4 w-4 text-[#003AB8]"></i>
+            <div class="leading-tight">
+              <p class="text-xs text-muted-foreground">AI Credits</p>
+              <p class="text-sm font-semibold">188.48</p>
+            </div>
+          </div>
+          <span class="rounded-md bg-[#003AB8] px-2.5 py-0.5 text-xs font-semibold text-white">Buy</span>
+        </div>
+      </div>
+
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+
+      <nav class="flex-1 space-y-1 px-3 py-3" id="mainNav"></nav>
+
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+
+      <div class="space-y-1 px-3 py-3" id="bottomNav"></div>
+
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+
+      <div class="space-y-1 px-3 py-3">
+        <button class="flex w-full items-center justify-between rounded-md bg-muted px-3 py-2 text-sm">
+          <span class="flex items-center gap-2">🇬🇧 EN</span>
+          <i data-lucide="chevrons-up-down" class="h-4 w-4 text-muted-foreground"></i>
+        </button>
+        <button class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm">
+          <span class="flex items-center gap-2">
+            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-semibold">L</span>
+            Luboš Repka
+          </span>
+          <i data-lucide="chevrons-up-down" class="h-4 w-4 text-muted-foreground"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto px-8 py-6">
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold">Dashboard</h1>
+        <p class="mt-1 text-muted-foreground">Welcome back! Here's an overview of your recruitment activities for Testovanie 2.</p>
+      </div>
+
+      <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" id="statGrid"></div>
+
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-2xl font-bold">Job Positions</h2>
+        <div class="flex gap-2">
+          <button class="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm hover:bg-muted">View All</button>
+          <button class="rounded-md bg-[#003AB8] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#002a85]">+ Create Job Position</button>
+        </div>
+      </div>
+
+      <div class="mb-8 rounded-xl border border-border bg-card shadow-sm">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border text-left text-muted-foreground">
+              <th class="px-6 py-3 font-medium">Position</th>
+              <th class="py-3 font-medium">Status</th>
+              <th class="py-3 font-medium">Created</th>
+              <th class="px-6 py-3 text-right font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="positionsBody"></tbody>
+        </table>
+        <div class="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
+          <button class="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card shadow-sm hover:bg-muted"><i data-lucide="chevron-left" class="h-4 w-4"></i></button>
+          <span class="text-sm text-muted-foreground">Page 1 of 3</span>
+          <button class="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card shadow-sm hover:bg-muted"><i data-lucide="chevron-right" class="h-4 w-4"></i></button>
+        </div>
+      </div>
+
+      <h2 class="mb-4 text-2xl font-bold">Recent Activities</h2>
+      <div class="rounded-xl border border-border bg-card shadow-sm">
+        <div class="flex items-center justify-center py-10">
+          <p class="text-muted-foreground">No recent activities to show.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const stats = [
+      { title: "Total Candidates", value: "14", change: "+3 (+27.27%)", caption: "All applicants", icon: "users" },
+      { title: "Open Positions", value: "11", change: "+1 (+10%)", caption: "Accepting applications", icon: "briefcase" },
+      { title: "Interviews Completed", value: "9", change: "+2 (+28.57%)", caption: "Finished calls", icon: "calendar" },
+      { title: "Interview Success Rate", value: "45%", change: "+1.01 (+2.27%)", caption: "Call success rate", icon: "trending-up" },
+    ];
+    const positions = [
+      { title: "Recruiter - špecialista výberov - pozícia vhodná aj pre absolventov", location: "Bratislava, SK", status: "Open", created: "20/05/2026" },
+      { title: "Poradca/Poradkyňa podnikateľa Zvolen", location: "Varšava, PL", status: "Open", created: "30/04/2026" },
+      { title: "Asistentka / asistent generálneho riaditeľa", location: "Bratislava, SK", status: "Open", created: "28/04/2026" },
+      { title: "Administrátor IBM i", location: "Bratislava, SK", status: "Open", created: "12/03/2026" },
+      { title: "Enterprise architect for Network Infrastructure at Industrial AI Cloud", location: "Remote", status: "Open", created: "11/03/2026" },
+    ];
+    const navItems = [
+      { label: "Dashboard", icon: "layout-grid", active: true },
+      { label: "Interviews", icon: "message-square" },
+      { label: "Job Positions", icon: "briefcase" },
+      { label: "Candidates", icon: "clipboard-list" },
+      { label: "Talent Sourcing", icon: "search", href: "instaview-sourcing-agent.html" },
+      { label: "Agenti", icon: "bot", href: "agents-preview.html" },
+      { label: "Design Agent", icon: "sparkles", href: "design-agent.html" },
+    ];
+    const bottomNav = [
+      { label: "Billing & Usage", icon: "credit-card" },
+      { label: "Settings", icon: "settings" },
+      { label: "Support", icon: "help-circle" },
+    ];
+
+    document.getElementById("mainNav").innerHTML = navItems.map(i => {
+      if (i.section)
+        return `<div class="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">${i.section}</div>`;
+      const cls = `flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${i.active ? "bg-[#003AB8]/15 text-[#003AB8]" : "text-foreground hover:bg-muted"}`;
+      const inner = `<i data-lucide="${i.icon}" class="h-4 w-4"></i>${i.label}`;
+      return i.href
+        ? `<a href="${i.href}" class="${cls}">${inner}</a>`
+        : `<button class="${cls}">${inner}</button>`;
+    }).join("");
+
+    document.getElementById("bottomNav").innerHTML = bottomNav.map(i => `
+      <button class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+        <i data-lucide="${i.icon}" class="h-4 w-4"></i>${i.label}
+      </button>`).join("");
+
+    document.getElementById("statGrid").innerHTML = stats.map(s => `
+      <div class="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div class="flex items-start justify-between">
+          <div class="space-y-2">
+            <p class="text-sm text-muted-foreground">${s.title}</p>
+            <div class="flex items-center gap-2">
+              <span class="text-3xl font-bold">${s.value}</span>
+              <span class="rounded-md bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-600">${s.change}</span>
+            </div>
+          </div>
+          <i data-lucide="${s.icon}" class="h-6 w-6 text-[#003AB8]"></i>
+        </div>
+        <p class="mt-3 text-xs text-muted-foreground">${s.caption}</p>
+      </div>`).join("");
+
+    document.getElementById("positionsBody").innerHTML = positions.map(p => `
+      <tr class="border-b border-border last:border-0">
+        <td class="px-6 py-4">
+          <p class="font-medium">${p.title}</p>
+          <p class="text-sm text-muted-foreground">${p.location}</p>
+        </td>
+        <td class="py-4"><span class="rounded-md bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-600">${p.status}</span></td>
+        <td class="py-4 text-muted-foreground">${p.created}</td>
+        <td class="px-6 py-4">
+          <div class="flex justify-end gap-1">
+            <button class="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"><i data-lucide="pencil" class="h-4 w-4"></i></button>
+            <button class="flex h-8 w-8 items-center justify-center rounded-md text-red-400 hover:bg-muted hover:text-red-500"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+          </div>
+        </td>
+      </tr>`).join("");
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>

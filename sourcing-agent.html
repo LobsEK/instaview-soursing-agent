@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InstaView · Sourcing agent</title>
+<style>
+  :root{
+    --indigo:#6C5CE7;
+    --indigo-strong:#5B4FE6;
+    --indigo-soft:#ece9ff;
+    --indigo-softer:#f3f1ff;
+    --ink:#14141a;
+    --muted:#8a8a93;
+    --muted-2:#a8a8b0;
+    --line:#ececef;
+    --bg:#f6f6fb;
+    --card:#ffffff;
+    --green:#16a34a;
+    --green-soft:#e8f7ee;
+    --li:#0a66c2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    background:#fff;color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    width:100vw;height:100vh;background:#fff;overflow:hidden;
+    display:flex;
+  }
+
+  /* ---------- icon rail ---------- */
+  .rail{
+    width:56px;flex:none;border-right:1px solid var(--line);background:#fff;
+    display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;z-index:5;
+  }
+  .rail .top-toggle{
+    width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    color:#9a9aa3;cursor:pointer;
+  }
+  .rail .top-toggle:hover{background:#f5f5f7;color:#555}
+  .avatar{
+    width:34px;height:34px;border-radius:10px;background:var(--indigo-soft);
+    color:var(--indigo-strong);display:grid;place-items:center;font-size:12px;font-weight:800;
+    margin:4px 0 8px;letter-spacing:.5px;
+  }
+  .rail .ico{
+    width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
+    color:#9a9aa3;cursor:pointer;
+  }
+  .rail .ico:hover{background:#f5f5f7;color:#555}
+  .rail .ico.active{background:var(--indigo-soft);color:var(--indigo-strong)}
+  .rail .spacer{flex:1}
+  .flag{width:24px;height:17px;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;border:1px solid #e6e6ea;cursor:pointer}
+  .flag i{flex:1;display:block}
+  .flag .w{background:#fff}.flag .b{background:#0b4ea2}.flag .r{background:#ee1620}
+  .avatar.user{background:#f0f0f3;color:#7a7a82;margin:8px 0 0}
+
+  /* ---------- collapsible side panel (chat/history) ---------- */
+  .side{
+    width:0;flex:none;border-right:1px solid var(--line);background:#fff;overflow:hidden;
+    display:flex;flex-direction:column;transition:width .25s ease;
+  }
+  .side.open{width:300px}
+  .side-inner{min-width:300px;height:100%;overflow-y:auto;padding:16px 16px 22px;display:flex;flex-direction:column}
+
+  .profile{display:flex;align-items:center;gap:11px;margin-bottom:18px}
+  .profile .pic{width:36px;height:36px;border-radius:50%;background:#cfcfd6;flex:none}
+  .profile .nm{font-size:17px;font-weight:700;flex:1}
+  .collapse{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;color:#8a8a93;cursor:pointer;background:#fff}
+  .collapse:hover{background:#f5f5f7}
+
+  .menu-btn{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:#efeff2;border:0;border-radius:11px;padding:13px 15px;font-size:14.5px;font-weight:600;color:#1f1f26;cursor:pointer;margin-bottom:9px;font-family:inherit}
+  .menu-btn:hover{background:#e7e7ec}
+  .menu-btn.accent{color:var(--indigo-strong)}
+  .menu-btn .badge{background:#2a2a30;color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:3px 9px;margin-left:auto}
+
+  .sec-label{font-size:12px;color:#9a9aa3;font-weight:600;margin:30px 0 10px;padding-left:2px}
+  .sec-label.history{margin-top:48px}
+
+  .proj{background:#efeff2;border-radius:11px;padding:12px 14px;display:flex;align-items:flex-start;gap:8px;cursor:pointer}
+  .proj:hover{background:#e7e7ec}
+  .proj .t{flex:1;min-width:0}
+  .proj .nm{font-size:14.5px;font-weight:700}
+  .proj .sub{font-size:11px;color:#9a9aa3;display:flex;align-items:center;gap:5px;margin-top:3px}
+  .dots{color:#9a9aa3;cursor:pointer;flex:none;display:grid;place-items:center;padding:2px}
+
+  .hist-item{background:#efeff2;border-radius:11px;padding:13px 15px;font-size:14.5px;font-weight:600;color:#1f1f26;display:flex;align-items:center;cursor:pointer;margin-bottom:9px}
+  .hist-item:hover{background:#e7e7ec}
+  .hist-item .dots{margin-left:auto}
+
+  /* ---------- main / canvas ---------- */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+
+  /* dotted canvas background */
+  .canvas-bg{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #efeaff 0%, rgba(246,246,251,0) 55%),
+      var(--bg);
+  }
+  .canvas-bg::after{
+    content:"";position:absolute;inset:0;
+    background-image:radial-gradient(circle, #d6d6e4 1.1px, transparent 1.2px);
+    background-size:22px 22px;opacity:.5;
+  }
+
+  /* hero */
+  .hero{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px}
+  .watermark{
+    position:absolute;top:26px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:14px;
+    color:#cfc8ee;opacity:.55;pointer-events:none;user-select:none;
+  }
+  .watermark svg{width:54px;height:54px}
+  .watermark span{font-size:46px;font-weight:800;letter-spacing:-1px}
+
+  .hero h1{font-size:44px;font-weight:800;letter-spacing:-1px;text-align:center;color:#15151c;min-height:54px;display:flex;align-items:center;justify-content:center}
+  .hero h1 .caret{display:inline-block;width:3px;height:.92em;background:var(--ink);margin-left:6px;border-radius:1px;animation:caretBlink 1s steps(1) infinite}
+  @keyframes caretBlink{50%{opacity:0}}
+  .hero .sub{font-size:16.5px;color:var(--indigo-strong);text-align:center;max-width:560px;margin:14px 0 30px;line-height:1.45;font-weight:500}
+
+  /* search box */
+  .searchbox{
+    width:760px;max-width:100%;background:#f4f4f7;border:1px solid #e4e4ec;border-radius:22px;
+    box-shadow:0 14px 40px rgba(80,70,160,.10);overflow:visible;position:relative;
+  }
+  .sb-input{
+    width:100%;border:0;outline:0;resize:none;background:transparent;
+    font-family:inherit;font-size:17px;font-weight:600;color:#4a4a52;line-height:1.5;
+    padding:24px 26px 8px;min-height:96px;
+  }
+  .sb-input::placeholder{color:#8b8b96;font-weight:600}
+  .sb-bottom{display:flex;align-items:center;justify-content:space-between;padding:10px 20px 18px}
+  .icobtn{
+    width:38px;height:38px;border-radius:50%;border:1px solid #dedee6;background:#fff;
+    display:grid;place-items:center;color:#8a8a93;cursor:pointer;flex:none;
+  }
+  .icobtn:hover{background:#f7f7fa;color:#555}
+  .sb-right{display:flex;align-items:center;gap:12px;position:relative}
+
+  .model{
+    display:flex;align-items:center;gap:7px;border:1px solid #dedee6;border-radius:10px;
+    padding:9px 12px;font-size:13.5px;color:#3a3a42;background:#fff;cursor:pointer;font-weight:500;
+  }
+  .model:hover{background:#fafafa}
+  .model svg{color:#9a9aa3}
+  .model-menu{
+    position:absolute;bottom:48px;left:0;width:160px;background:#fff;border:1px solid #e6e6ee;
+    border-radius:11px;box-shadow:0 12px 30px rgba(0,0,0,.14);padding:5px;z-index:40;display:none;
+  }
+  .model-menu.open{display:block}
+  .model-menu .opt{padding:9px 11px;border-radius:8px;font-size:13.5px;color:#3a3a42;cursor:pointer}
+  .model-menu .opt:hover{background:#f4f3ff}
+  .model-menu .opt.sel{background:var(--indigo-soft);color:var(--indigo-strong);font-weight:600}
+
+  .mic{width:40px;height:40px;border-radius:50%;border:1px solid #dedee6;background:#fff;display:grid;place-items:center;color:#3a3a42;cursor:pointer}
+  .mic:hover{background:#f7f7fa}
+  .mic.rec{background:#ffe9e9;border-color:#ffc9c9;color:#e23b3b;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(226,59,59,.4)}50%{box-shadow:0 0 0 6px rgba(226,59,59,0)}}
+  .search-btn{
+    background:var(--indigo-strong);color:#fff;border:0;border-radius:11px;
+    padding:11px 26px;font-size:15px;font-weight:700;cursor:pointer;
+  }
+  .search-btn:hover{filter:brightness(1.05)}
+
+  /* divider + grey attachments tray */
+  .sb-tray{
+    border-top:1px solid #e2e2ea;background:#eaeaf0;border-radius:0 0 21px 21px;
+    padding:13px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  }
+  .tray-file{display:inline-flex;align-items:center;gap:9px;font-size:14px;color:#55555e}
+  .tray-file>svg{color:#9a9aa3}
+  .tray-file .more{display:inline-flex;align-items:center;gap:4px;color:#9a9aa3;cursor:pointer}
+  .voice-chip{
+    display:inline-flex;align-items:center;gap:9px;background:#fff;border:1px solid #e2e2ea;
+    border-radius:22px;padding:6px 12px 6px 8px;font-size:13px;color:#44444c;
+  }
+  .voice-chip .play{width:24px;height:24px;border-radius:50%;background:var(--indigo-strong);color:#fff;display:grid;place-items:center;flex:none}
+  .voice-chip .wave{display:flex;align-items:center;gap:2px;height:14px}
+  .voice-chip .wave i{width:2px;background:#c5c2e6;border-radius:2px;display:block}
+  .voice-chip .dur{color:#8a8a93;font-size:12px}
+  .voice-chip .del{color:#b0b0b8;cursor:pointer;display:grid;place-items:center}
+
+  /* hint chips under the search box */
+  .hints{margin-top:22px;text-align:center;position:relative;z-index:1}
+  .hints .lead{font-size:13.5px;color:#a6a6b2;margin-bottom:12px}
+  .hint-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .hint{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:#a6a6b2;font-weight:500;
+    border:1.5px solid #e0e0e8;border-radius:22px;padding:7px 15px;background:#fff;transition:all .25s}
+  .hint svg{color:#cfcfd6;transition:color .25s}
+  .hint.done{color:var(--green);border-color:var(--green);background:var(--green-soft)}
+  .hint.done svg{color:var(--green)}
+
+  /* ---------- working states (after submit) ---------- */
+  .topbar{height:54px;flex:none;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:flex-end;padding:0 18px;position:relative;z-index:2}
+  .db-badge{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:600;color:#333}
+  .db-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+  .content{flex:1;overflow-y:auto;padding:26px 30px 40px;position:relative;z-index:1}
+
+  .searching{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:var(--muted)}
+  .spinner{width:46px;height:46px;border:4px solid #e3e1f5;border-top-color:var(--indigo);border-radius:50%;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* ---------- Conversation / thinking view ---------- */
+  .convo{position:absolute;inset:0;z-index:3;background:#fff;display:flex}
+  .convo-chat{width:540px;flex:none;display:flex;flex-direction:column;padding:24px 28px 22px;
+    background:linear-gradient(180deg,#fff 50%,#efeafd 100%);position:relative}
+  .convo-head{display:flex;align-items:center;gap:13px;margin-bottom:26px}
+  .convo-head .tg{width:36px;height:36px;border-radius:9px;border:1px solid #e6e6ee;background:#fff;display:grid;place-items:center;color:#8a8a93;cursor:pointer}
+  .convo-head .tg:hover{background:#f5f5f7}
+  .convo-head .lg{width:42px;height:42px;border-radius:13px;background:#fff;border:1px solid #ece9ff;display:grid;place-items:center;color:var(--indigo-strong);box-shadow:0 3px 10px rgba(108,92,231,.16)}
+  .convo-head h2{font-size:23px;font-weight:800;letter-spacing:-.4px}
+
+  .convo-thread{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:18px;padding-bottom:10px}
+  .msg-user{align-self:flex-end;display:flex;align-items:center;gap:10px;max-width:85%}
+  .msg-user .b{background:#fff;border:1px solid #ececf0;border-radius:14px;padding:11px 16px;font-size:14px;color:#2c2c30;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  .msg-user .av{width:38px;height:38px;border-radius:11px;background:#ececf0;color:#8a8a93;display:grid;place-items:center;flex:none}
+  .msg-ai{align-self:flex-start;display:flex;align-items:flex-start;gap:10px;max-width:85%}
+  .msg-ai .ic{width:38px;height:38px;border-radius:11px;background:#fff;border:1px solid #ece9ff;display:grid;place-items:center;color:var(--indigo-strong);flex:none}
+  .think-pill{background:#fff;border:1px solid #ececf0;border-radius:14px;padding:12px 17px;display:flex;align-items:center;gap:11px;box-shadow:0 2px 10px rgba(0,0,0,.05);font-weight:700;color:#3a3a42;font-size:14px}
+  .think-pill .td{display:flex;gap:4px}
+  .think-pill .td i{width:6px;height:6px;border-radius:50%;background:var(--indigo);display:block;animation:tdot 1.4s infinite}
+  .think-pill .td i:nth-child(2){animation-delay:.2s}
+  .think-pill .td i:nth-child(3){animation-delay:.4s}
+  @keyframes tdot{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}
+  .msg-ai .ai-bubble{background:#fff;border:1px solid #ececf0;border-radius:14px;padding:12px 16px;font-size:14px;line-height:1.55;color:#2c2c30;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  .msg-user .b{white-space:normal}
+
+  /* blue "lava" input */
+  .convo-input{position:relative;border-radius:22px;padding:18px 18px 16px;overflow:hidden;
+    background:linear-gradient(120deg,#9a7cf2 0%,#6aa8ff 48%,#62d2f5 100%);background-size:200% 200%;
+    box-shadow:0 14px 34px rgba(90,110,240,.34);animation:lavaShift 7s ease-in-out infinite alternate}
+  @keyframes lavaShift{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+  .convo-input .ph{color:rgba(255,255,255,.92);font-size:14.5px;font-weight:500;margin-bottom:26px}
+  .convo-input .ctrls{display:flex;align-items:center;justify-content:space-between}
+  .ci-up{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(6px)}
+  .ci-up:hover{background:rgba(255,255,255,.3)}
+  .ci-send{width:42px;height:42px;border-radius:12px;background:rgba(12,12,22,.9);border:0;color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+  .ci-send .sp{width:18px;height:18px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite}
+  .press{text-align:center;font-size:12.5px;font-weight:600;color:var(--indigo-strong);margin-top:12px;opacity:.7}
+
+  /* stage with big thinking bubble */
+  .convo-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:64px;min-width:0}
+  .blob-stage{transform:scale(2.3);transform-origin:center}
+  .stage-label{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;font-style:italic;color:#3a4a6a}
+  .stage-label .d{width:9px;height:9px;border-radius:50%;background:var(--indigo);animation:tdot 1.4s infinite}
+
+  /* ---- blob bubble (from thinking-bubble spec) ---- */
+  .bubble{position:relative;width:108px;height:92px;overflow:visible;
+    animation:bubblePulse 3.8s ease-in-out infinite alternate, bubbleDrift 7s ease-in-out infinite alternate}
+  @keyframes bubblePulse{0%{transform:scale(1)}35%{transform:scale(.88)}70%{transform:scale(1.1)}100%{transform:scale(.94)}}
+  @keyframes bubbleDrift{0%{margin-top:0}50%{margin-top:8px}100%{margin-top:-5px}}
+  .blob{position:absolute;border-radius:50%}
+  .b1{width:90px;height:90px;background:#5CBFF9;filter:blur(22px);top:-22px;left:-22px;animation:bb1 9s ease-in-out infinite alternate}
+  .b2{width:95px;height:95px;background:#3030FF;filter:blur(26px);bottom:-24px;right:-22px;animation:bb2 12s ease-in-out infinite alternate}
+  .b3{width:85px;height:85px;background:#6AA8FF;filter:blur(20px);top:50%;left:50%;transform:translate(-50%,-50%);animation:bb3 10s ease-in-out infinite alternate}
+  .b4{width:88px;height:72px;background:#172693;filter:blur(28px);bottom:-18px;left:-12px;animation:bb4 15s ease-in-out infinite alternate}
+  .b5{width:60px;height:60px;background:#9dd4ff;filter:blur(18px);top:-10px;right:-6px;animation:bb5 8s ease-in-out infinite alternate}
+  @keyframes bb1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(55px,42px) scale(1.25)}100%{transform:translate(14px,68px) scale(.88)}}
+  @keyframes bb2{0%{transform:translate(0,0) scale(1.05)}50%{transform:translate(-60px,-46px) scale(.82)}100%{transform:translate(-20px,-80px) scale(1.3)}}
+  @keyframes bb3{0%{transform:translate(-50%,-50%) scale(.9)}25%{transform:translate(-10%,-90%) scale(1.3)}50%{transform:translate(-95%,-10%) scale(.85)}75%{transform:translate(-5%,45%) scale(1.2)}100%{transform:translate(-88%,-68%) scale(1.05)}}
+  @keyframes bb4{0%{transform:translate(0,0) scale(1)}100%{transform:translate(75px,-32px) scale(1.3)}}
+  @keyframes bb5{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-38px,44px) scale(1.4)}}
+  .bubble-text{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .thinking-label{color:rgba(255,255,255,.95);font-size:12.5px;font-weight:600;letter-spacing:.3px;text-shadow:0 0 12px rgba(0,0,50,.6),0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;gap:1px}
+  .bb-dots span{opacity:0;animation:bbdot 1.5s infinite}
+  .bb-dots span:nth-child(1){animation-delay:0s}.bb-dots span:nth-child(2){animation-delay:.3s}.bb-dots span:nth-child(3){animation-delay:.6s}
+  @keyframes bbdot{0%,100%{opacity:0}50%{opacity:1}}
+
+  /* ---------- Candidate calibration (A vs B) ---------- */
+  .calib{position:absolute;inset:0;z-index:3;background:#fff;overflow-y:auto;padding:42px 48px 64px}
+  .calib-head{text-align:center;max-width:760px;margin:0 auto 42px}
+  .calib-head h2{font-size:28px;font-weight:800;letter-spacing:-.4px;color:#15151c}
+  .calib-head p{font-size:14.5px;color:#8a8a93;margin-top:11px;line-height:1.55}
+  .calib-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:64px;position:relative}
+  .calib-grid .divider{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#ececf0;transform:translateX(-50%)}
+  .calib-grid .vs{position:absolute;left:50%;top:340px;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:#fff;border:1px solid #e6e6ee;display:grid;place-items:center;font-size:12px;font-weight:700;color:#8a8a93;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .cand{display:flex;flex-direction:column;gap:24px}
+  .cand-title{display:flex;align-items:center;gap:10px}
+  .cand-title .dot{width:9px;height:9px;border-radius:50%;background:var(--indigo)}
+  .cand-title h3{font-size:20px;font-weight:800;border-bottom:2px solid var(--ink);padding-bottom:3px}
+  .cand-sub{font-size:14px;color:#8a8a93;margin-top:-16px}
+  .csec-h{display:flex;align-items:center;gap:9px;margin-bottom:13px;color:var(--indigo-strong);font-size:13px;font-weight:700}
+  .csec-h .ln{width:14px;height:2px;background:var(--indigo-strong);border-radius:2px;flex:none}
+  .csec-h .pencil{margin-left:2px;color:#c4c4cc;cursor:pointer;display:grid;place-items:center}
+  .csec-h .pencil:hover{color:var(--indigo-strong)}
+  .chips-wrap{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+  .ctag{display:inline-flex;align-items:center;gap:9px;border:1px solid #e3e3ea;border-radius:22px;padding:8px 15px;font-size:14px;font-weight:600;color:#2c2c30;background:#fff}
+  .ctag-x{border:0;background:transparent;color:#b0b0b8;cursor:pointer;font-size:16px;line-height:1;padding:0}
+  .ctag-x:hover{color:#e23b3b}
+  .ctag-add{border:1.5px dashed #d4d4de;border-radius:22px;padding:8px 15px;font-size:14px;font-weight:600;color:#9a9aa3;background:#fff;cursor:pointer;font-family:inherit}
+  .ctag-add:hover{border-color:var(--indigo);color:var(--indigo-strong)}
+  .ctag-input{border:1.5px solid var(--indigo);border-radius:22px;padding:8px 15px;font-size:14px;font-weight:600;color:var(--indigo-strong);outline:none;width:140px;font-family:inherit}
+  .cedit{font-size:14px;line-height:1.7;color:#2c2c30;border:1px solid transparent;border-radius:10px;padding:7px 9px;margin-left:-9px;outline:none}
+  .cedit:hover{background:#fafafb}
+  .cedit:focus{background:#fff;border-color:#dcdce4;box-shadow:0 0 0 2px rgba(108,92,231,.12)}
+  .cedit strong{font-weight:700}
+  .cprofile{font-size:14px;line-height:1.65;color:#33333a;background:#f5f5f8;border-left:3px solid var(--indigo);border-radius:10px;padding:15px 17px;outline:none}
+  .cprofile:focus{box-shadow:0 0 0 2px rgba(108,92,231,.2)}
+  .cbtn{width:100%;background:var(--indigo-strong);color:#fff;border:0;border-radius:12px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:9px}
+  .cbtn:hover{filter:brightness(1.06)}
+
+  /* ---------- Knowledge modal ---------- */
+  .modal-overlay{position:fixed;inset:0;background:rgba(20,20,28,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px}
+  .modal{width:760px;max-width:100%;max-height:86vh;background:#fff;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+  .k-top{background:#f4f4f6;padding:18px 22px 0;border-bottom:1px solid #ececef}
+  .k-head{display:flex;align-items:center;gap:10px}
+  .k-title{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;flex:1}
+  .k-title svg{color:#3a3a42}
+  .k-close{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#8a8a93;cursor:pointer}
+  .k-close:hover{background:#e7e7ec}
+  .k-sub{font-size:13.5px;color:#8a8a93;margin:8px 0 16px;line-height:1.45;max-width:640px}
+  .k-tabs{display:flex;gap:26px}
+  .k-tab{font-size:14px;font-weight:600;color:#9a9aa3;padding-bottom:12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .k-tab.active{color:#1f1f26;border-bottom-color:#1f1f26}
+  .k-body{flex:1;overflow-y:auto;padding:26px 22px;min-height:380px;display:flex;flex-direction:column}
+
+  .k-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center}
+  .k-empty .bk{color:#c8c8d0;margin-bottom:8px}
+  .k-empty h3{font-size:15px;font-weight:600;color:#55555e}
+  .k-empty p{font-size:13.5px;color:#a6a6b2;max-width:360px;line-height:1.45}
+  .k-add{margin-top:16px;background:#2a2a30;color:#fff;border:0;border-radius:10px;padding:11px 20px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+  .k-add:hover{background:#1f1f26}
+
+  .k-listhead{display:flex;align-items:center;margin-bottom:14px}
+  .k-listhead h4{font-size:13px;font-weight:600;color:#8a8a93;flex:1}
+  .k-list{display:flex;flex-direction:column;gap:12px}
+  .k-item{border:1px solid #ececef;border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;background:#fff}
+  .k-item .ic{color:var(--indigo-strong);flex:none;margin-top:1px}
+  .k-item p{flex:1;font-size:13.5px;line-height:1.5;color:#2c2c30}
+  .k-item .del{color:#b0b0b8;cursor:pointer;flex:none}
+  .k-item .del:hover{color:#e23b3b}
+
+  .k-form{display:flex;flex-direction:column;gap:14px}
+  .k-form label{font-size:13.5px;font-weight:600;color:#3a3a42}
+  .k-form textarea{width:100%;border:1px solid #e0e0e8;border-radius:12px;padding:14px;font-family:inherit;font-size:14px;line-height:1.5;resize:vertical;min-height:150px;outline:none;color:var(--ink)}
+  .k-form textarea:focus{border-color:var(--indigo)}
+  .k-form textarea::placeholder{color:#b3b3bb}
+  .k-formrow{display:flex;gap:10px;justify-content:flex-end}
+  .k-btn-save{background:#2a2a30;color:#fff;border:0;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer}
+  .k-btn-save:hover{background:#1f1f26}
+  .k-btn-cancel{background:#fff;border:1px solid #e0e0e8;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;color:#55555e;cursor:pointer}
+  .k-btn-cancel:hover{background:#f5f5f7}
+  .sugg-add{background:var(--indigo-soft);color:var(--indigo-strong);border:0;border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer;flex:none}
+  .sugg-add:hover{filter:brightness(.97)}
+
+  /* ---------- skeleton (updating profile) ---------- */
+  .skel-grid{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:60px;width:720px;max-width:78%}
+  .skel-vs{position:absolute;left:50%;top:118px;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid #e6e6ee;display:grid;place-items:center;font-size:11px;font-weight:700;color:#b8b8c0;z-index:2}
+  .skel-col{display:flex;flex-direction:column;gap:9px}
+  .skb{height:12px;border-radius:7px;background:#eceaf6;animation:shim 1.4s ease-in-out infinite}
+  .skb.t{height:16px;background:#ddd6f3}.skb.u{background:#efeef5}
+  .skb.block{height:62px;border-radius:12px}
+  .skb.btn{height:46px;border-radius:12px;background:#e4dff7}
+  .skel-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .skel-chips i{height:30px;border-radius:18px;background:#eceaf6;display:block;animation:shim 1.4s ease-in-out infinite}
+  .skel-chips i.dash{background:transparent;border:1.5px dashed #ddd9ee}
+  @keyframes shim{0%,100%{opacity:.5}50%{opacity:1}}
+
+  /* ---------- candidate cards (results) ---------- */
+  .cardsview{position:absolute;inset:0;z-index:3;background:#F4F5F7;overflow-y:auto;padding:20px 22px 40px;font-size:13px;color:#111;line-height:1.5}
+  #view-cards .filters-row{display:flex;align-items:center;gap:5px;margin-bottom:14px;flex-wrap:wrap}
+  #view-cards .ftab{padding:6px 13px;border-radius:7px;font-size:12px;cursor:pointer;border:1px solid #E5E5E5;background:#fff;color:#666;display:flex;align-items:center;gap:5px}
+  #view-cards .ftab:hover{border-color:var(--indigo);color:var(--indigo-strong)}
+  #view-cards .ftab.active{background:var(--indigo-strong);color:#fff;border-color:var(--indigo-strong);font-weight:600}
+  #view-cards .ftab-n{font-size:10px;padding:0 5px;border-radius:8px;background:rgba(255,255,255,.25)}
+  #view-cards .ftab:not(.active) .ftab-n{background:#F0F0F0;color:#666}
+  #view-cards .filter-right{margin-left:auto;display:flex;gap:5px}
+  #view-cards .bulk-bar{background:#1E293B;color:#fff;padding:10px 16px;display:none;align-items:center;gap:10px;border-radius:8px;margin-bottom:12px}
+  #view-cards .bulk-bar.open{display:flex}
+  #view-cards .bulk-count{font-size:13px;font-weight:600;white-space:nowrap}
+  #view-cards .bulk-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  #view-cards .btn-bulk{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px}
+  #view-cards .btn-bulk:hover{background:rgba(255,255,255,.2)}
+  #view-cards .btn-bulk-primary{background:var(--indigo-strong);border-color:var(--indigo-strong)}
+  #view-cards .btn-bulk-li{background:#0A66C2;border-color:#0A66C2}
+  #view-cards .bulk-close{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:16px;margin-left:4px}
+  #view-cards .cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  #view-cards .ccard{background:#fff;border:1px solid #E5E5E5;border-radius:10px;display:flex;flex-direction:column;transition:border-color .12s,box-shadow .12s;position:relative}
+  #view-cards .ccard:hover{border-color:#B0C4FF;box-shadow:0 2px 10px rgba(108,92,231,.07)}
+  #view-cards .ccard.selected{border-color:var(--indigo-strong);box-shadow:0 0 0 2px rgba(108,92,231,.12)}
+  #view-cards .card-checkbox-wrap{position:absolute;top:13px;left:13px;z-index:2}
+  #view-cards .card-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--indigo-strong)}
+  #view-cards .card-head{padding:14px 14px 10px 36px}
+  #view-cards .cand-name{font-size:14px;font-weight:600;color:#111;display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:2px}
+  #view-cards .ideal-tag{font-size:9px;font-weight:700;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:8px;letter-spacing:.3px}
+  #view-cards .cand-title{font-size:11px;color:#555;margin-bottom:6px}
+  #view-cards .cand-meta{display:flex;flex-wrap:wrap;gap:4px}
+  #view-cards .meta-tag{font-size:10px;color:#555;background:#F5F5F5;border:1px solid #EBEBEB;border-radius:4px;padding:2px 7px;white-space:nowrap}
+  #view-cards .meta-tag-avail{background:#F0FDF4;border-color:#BBF7D0;color:#15803D}
+  #view-cards .meta-tag-edu{background:#F8FAFC;border-color:#E2E8F0;color:#64748B}
+  #view-cards .card-section{padding:8px 14px;border-top:1px solid #F3F3F3}
+  #view-cards .sec-title{font-size:9px;font-weight:700;color:#C0C0C0;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+  #view-cards .fit-list{display:flex;flex-direction:column;gap:3px}
+  #view-cards .fit-row{display:flex;align-items:flex-start;gap:6px;font-size:11px;color:#444;line-height:1.45}
+  #view-cards .fi-ok{width:13px;height:13px;border-radius:50%;background:#ECFDF5;color:#059669;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+  #view-cards .fi-warn{width:13px;height:13px;border-radius:50%;background:#FFFBEB;color:#D97706;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+  #view-cards .exp-cols{display:flex;gap:10px;align-items:stretch}
+  #view-cards .exp-list{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+  #view-cards .exp-row{display:flex;align-items:flex-start;gap:7px}
+  #view-cards .exp-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+  #view-cards .ed-active{background:var(--indigo-strong)}
+  #view-cards .ed-past{background:#D1D5DB}
+  #view-cards .exp-role{font-size:11px;font-weight:500;color:#111}
+  #view-cards .exp-co{font-size:10px;color:#777}
+  #view-cards .exp-dur{font-size:10px;color:#BBB}
+  #view-cards .exp-stat{flex-shrink:0;width:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-left:1px solid #F0F0F0;padding-left:10px}
+  #view-cards .exp-stat-num{font-size:18px;font-weight:700;color:#111;line-height:1}
+  #view-cards .exp-stat-unit{font-size:9px;color:#BBB;text-transform:uppercase;letter-spacing:.4px;margin-top:1px}
+  #view-cards .exp-stat-sep{width:24px;height:1px;background:#EBEBEB;margin:7px auto}
+  #view-cards .exp-stat-req{font-size:11px;font-weight:600;color:var(--indigo-strong)}
+  #view-cards .exp-stat-rlbl{font-size:9px;color:#BBB;margin-top:1px}
+  #view-cards .ai-text{font-size:11px;color:#666;line-height:1.65;border-left:2px solid #EBEBEB;padding-left:9px;font-style:italic}
+  #view-cards .card-foot{padding:10px 14px;border-top:1px solid #F3F3F3;margin-top:auto;display:flex;flex-direction:column;gap:7px}
+  #view-cards .contact-row{display:flex;gap:6px}
+  #view-cards .contact-chip{flex:1;display:flex;align-items:center;gap:6px;font-size:11px;color:#555;background:#FAFAFA;border:1px solid #EBEBEB;border-radius:6px;padding:5px 9px;cursor:pointer;transition:border-color .12s;min-width:0}
+  #view-cards .contact-chip:hover{border-color:var(--indigo-strong);color:var(--indigo-strong)}
+  #view-cards .contact-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #view-cards .c-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  #view-cards .c-ok{background:#10B981}
+  #view-cards .c-none{background:#D1D5DB}
+  #view-cards .c-lbl{font-size:9px;color:#BBB;margin-left:auto;flex-shrink:0}
+  #view-cards .decision-row{display:flex;gap:5px}
+  #view-cards .dec-btn{flex:1;padding:5px 0;border-radius:6px;border:1px solid #E5E5E5;background:#fff;font-size:11px;color:#666;cursor:pointer;transition:all .12s;text-align:center}
+  #view-cards .dec-btn:hover{border-color:var(--indigo-strong);color:var(--indigo-strong)}
+  #view-cards .dec-btn.active-yes{background:#ECFDF5;color:#059669;border-color:#6EE7B7;font-weight:600}
+  #view-cards .dec-btn.active-maybe{background:#FFFBEB;color:#D97706;border-color:#FCD34D;font-weight:600}
+  #view-cards .dec-btn.active-no{background:#FEF2F2;color:#DC2626;border-color:#FCA5A5;font-weight:600}
+  #view-cards .main-actions{display:flex;gap:6px}
+  #view-cards .btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .12s;white-space:nowrap}
+  #view-cards .btn-outline{background:#fff;color:#333;border-color:#D1D5DB}
+  #view-cards .btn-outline:hover{border-color:var(--indigo-strong);color:var(--indigo-strong)}
+  #view-cards .btn-linkedin{background:#0A66C2;color:#fff;border-color:#0A66C2}
+  #view-cards .btn-linkedin:hover{background:#085494}
+  #view-cards .btn-ghost{background:#fff;color:#555;border-color:#E5E5E5}
+  #view-cards .btn-ghost:hover{background:#F5F5F5}
+  #view-cards .btn-sm{padding:5px 11px;font-size:11px;border-radius:6px}
+  #view-cards .btn-full{flex:1}
+  #view-cards .li-badge-btn{width:14px;height:14px;background:#fff;color:#0A66C2;font-size:8px;font-weight:900;border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  #view-cards .similar-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--indigo-strong);font-weight:500;background:none;border:none;cursor:pointer;padding:2px 0}
+  #view-cards .similar-link:hover{opacity:.7;text-decoration:underline}
+
+  /* ---------- Reach out by email modal ---------- */
+  .em-modal{width:94vw;max-width:1180px;height:90vh;max-height:90vh}
+  .em-top{padding:22px 30px 0}
+  .em-list{display:flex;flex-direction:column;gap:12px}
+  .em-msg.collapsed .em-msg-body{display:none}
+  .em-msg-head{cursor:pointer}
+  .em-summary{display:flex;align-items:center;gap:12px;border:1px solid #ececf0;border-radius:12px;padding:16px 18px;margin-bottom:16px}
+  .em-sum-lbl{font-size:11px;font-weight:700;letter-spacing:.6px;color:#9a9aa3}
+  .em-sum-n{font-size:18px;font-weight:800;margin-top:2px}
+  .em-gmailtag{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700}
+  .em-rcpt{display:flex;align-items:center;gap:12px;border:1px solid #ececf0;border-radius:12px;padding:13px 16px}
+  .em-rcpt .em-email{margin-left:auto}
+  .em-rcpt .ok{color:#16a34a;flex:none}
+  .em-warn{display:flex;gap:11px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;margin-top:16px;font-size:13.5px;line-height:1.5;color:#92400e}
+  .em-warn svg{flex:none;color:#d97706;margin-top:1px}
+  /* agent running banner */
+  .em-agent{background:#f6f5ff;border:1px solid #e6e2fb;border-radius:12px;padding:13px 16px;margin-bottom:16px}
+  .agent-row{display:flex;align-items:center;gap:12px}
+  .agent-dot{width:10px;height:10px;border-radius:50%;background:#16a34a;flex:none;animation:apulse 1.4s infinite}
+  @keyframes apulse{0%{box-shadow:0 0 0 0 rgba(22,163,74,.5)}70%{box-shadow:0 0 0 8px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+  .em-agent.done .agent-dot{animation:none;background:#16a34a}
+  .agent-txt{font-size:13.5px;color:#3a3a42}
+  .agent-txt b{font-weight:700}
+  .agent-prog{margin-left:auto;font-size:13px;font-weight:700;color:var(--indigo-strong)}
+  .agent-bar{height:5px;background:#e6e2fb;border-radius:3px;margin-top:11px;overflow:hidden}
+  .agent-bar i{display:block;height:100%;width:0;background:var(--indigo-strong);border-radius:3px;transition:width .2s}
+  .em-agent.done .agent-bar i{background:#16a34a}
+  /* approve-all bar + confirm checkboxes */
+  .em-apprbar{display:flex;align-items:center;gap:10px;margin:18px 2px 12px}
+  .em-apprbar .lbl{font-size:13px;color:#8a8a93}
+  .em-apprbar .lbl b{color:var(--ink);font-weight:700}
+  .em-apprbtn{margin-left:auto;background:var(--indigo-soft);color:var(--indigo-strong);border:0;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer}
+  .em-apprbtn:hover{filter:brightness(.97)}
+  .em-rcpt{cursor:pointer}
+  .em-appr{width:18px;height:18px;accent-color:var(--indigo-strong);cursor:pointer;flex:none}
+  .em-rcpt.off{opacity:.5}
+  .em-head{display:flex;align-items:flex-start;gap:10px}
+  .em-title{font-size:18px;font-weight:800}
+  .em-sub{font-size:13px;color:#8a8a93;margin-top:3px}
+  .em-head .k-close{margin-left:auto}
+  .em-steps{display:flex;align-items:center;gap:10px;padding:20px 0 18px}
+  .em-step{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.5px;color:#b8b8c0}
+  .em-step.active{color:var(--indigo-strong)}
+  .em-step.done{color:#16a34a}
+  .em-dot,.em-num{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;flex:none}
+  .em-step .em-num{background:#ececf0;color:#9a9aa3}
+  .em-step.active .em-num{background:var(--indigo-strong);color:#fff}
+  .em-step.done .em-dot{background:#16a34a;color:#fff}
+  .em-line{flex:1;height:1.5px;background:#ececf0;max-width:90px}
+  .em-body{padding:18px 24px;overflow-y:auto;flex:1}
+  .em-sender{display:flex;align-items:center;gap:12px;border:1px solid #ececf0;border-radius:12px;padding:12px 14px}
+  .em-gmail{width:38px;height:38px;border-radius:10px;background:#fff;border:1px solid #eee;display:grid;place-items:center;flex:none}
+  .em-slbl{font-size:10px;font-weight:700;letter-spacing:.6px;color:#9a9aa3}
+  .em-sname{font-size:14px;font-weight:700;margin-top:1px}
+  .em-genhead{display:flex;justify-content:space-between;align-items:center;margin:20px 2px 10px;font-size:12px;font-weight:700;letter-spacing:.5px;color:#8a8a93}
+  .em-msg{border:1px solid #e5e6ec;border-radius:14px;overflow:hidden;background:#fff;transition:box-shadow .15s,border-color .15s}
+  .em-msg:hover{box-shadow:0 4px 18px rgba(20,20,40,.06)}
+  .em-msg-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#f5f6f9;border-bottom:1px solid #e9eaef}
+  .em-msg.collapsed .em-msg-head{border-bottom:0;background:#fbfbfc}
+  .em-msg-head .em-name{color:#1c1f2b}
+  .em-av{width:36px;height:36px;border-radius:50%;background:var(--indigo-strong);color:#fff;display:grid;place-items:center;font-size:12.5px;font-weight:800;flex:none;box-shadow:0 2px 6px rgba(108,92,231,.3)}
+  .em-name{font-size:14px;font-weight:700}
+  .em-email{font-size:13px;color:#9a9aa3;margin-left:auto}
+  .em-badge{font-size:11px;font-weight:700;border-radius:20px;padding:5px 12px;display:flex;align-items:center;gap:6px}
+  .em-badge.gen{background:#f3f1ff;color:var(--indigo-strong)}
+  .em-badge.ready{background:#e8f7ee;color:#16a34a}
+  .em-badge.sent{background:#e8f7ee;color:#16a34a}
+  .em-badge .sp{width:11px;height:11px;border:2px solid rgba(108,92,231,.3);border-top-color:var(--indigo-strong);border-radius:50%;animation:sp .8s linear infinite}
+  .em-chev{color:#b0b0bc;display:grid;place-items:center;transition:transform .2s}
+  .em-msg.collapsed .em-chev{transform:rotate(180deg)}
+  .em-msg-body{padding:16px 16px 16px;background:#fff}
+  .em-flbl{font-size:10.5px;font-weight:700;letter-spacing:.7px;color:#a0a0aa;margin:0 0 7px}
+  .em-flbl.mt{margin-top:15px}
+  .em-subject{width:100%;border:1px solid #e6e6ee;border-radius:10px;padding:12px 14px;font-family:inherit;font-size:14px;font-weight:600;color:var(--ink);outline:none;background:#fafafb;transition:all .15s}
+  .em-subject:focus{background:#fff;border-color:var(--indigo);box-shadow:0 0 0 3px rgba(108,92,231,.12)}
+  .em-text{width:100%;border:1px solid #e6e6ee;border-radius:10px;padding:14px;font-family:inherit;font-size:13.5px;line-height:1.7;color:#33333a;outline:none;resize:vertical;min-height:160px;background:#fafafb;transition:all .15s}
+  .em-text:focus{background:#fff;border-color:var(--indigo);box-shadow:0 0 0 3px rgba(108,92,231,.12)}
+  .em-msg-foot{display:flex;align-items:center;justify-content:space-between;margin-top:15px;padding-top:14px;border-top:1px solid #f0f0f4}
+  .em-regen{display:inline-flex;align-items:center;gap:8px;border:1px solid #e3e3ea;background:#fff;border-radius:9px;padding:9px 15px;font-size:12px;font-weight:700;letter-spacing:.4px;color:#55555e;cursor:pointer;font-family:inherit;transition:all .15s}
+  .em-regen:hover{background:var(--indigo-soft);border-color:transparent;color:var(--indigo-strong)}
+  .em-credit{font-size:12px;color:#9a9aa3}
+  .em-foot{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-top:1px solid #ececf0}
+  .em-foot .ft{font-size:13px;color:#8a8a93}
+  .em-actions{display:flex;gap:10px}
+  .em-back{background:#fff;border:1px solid #e0e0e8;border-radius:10px;padding:11px 22px;font-size:13px;font-weight:700;letter-spacing:.4px;color:#55555e;cursor:pointer}
+  .em-back:hover{background:#f5f5f7}
+  .em-cont{background:var(--indigo-strong);color:#fff;border:0;border-radius:10px;padding:11px 26px;font-size:13px;font-weight:700;letter-spacing:.4px;cursor:pointer}
+  .em-cont:hover{filter:brightness(1.06)}
+  .em-cont:disabled{opacity:.5;cursor:not-allowed}
+
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- icon rail -->
+  <nav class="rail">
+    <div class="top-toggle" id="railToggle" title="Otvoriť panel">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </div>
+    <div class="avatar">TE</div>
+    <div class="ico" title="Dashboard"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+    <div class="ico" title="Správy"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 01-12.5 7.5L3 21l1.9-5.5A8.5 8.5 0 1121 11.5z"/></svg></div>
+    <div class="ico" title="Pracovné pozície"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div>
+    <div class="ico" title="Kandidáti"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.2"/><path d="M5.5 16a3.5 3.5 0 017 0M14 9h4M14 13h3"/></svg></div>
+    <div class="ico active" title="Sourcing agent"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.2"/><path d="M3 19a6 6 0 0112 0M15 14a5 5 0 016 5"/></svg></div>
+    <div class="ico" title="Dokumenty"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v4h4M9 13h6M9 17h6"/></svg></div>
+    <div class="spacer"></div>
+    <div class="ico" title="Predplatné"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg></div>
+    <div class="ico" title="Nastavenia"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 00-1.7-1L16 2H8l-.8 2.5a7 7 0 00-1.7 1l-2.4-1-2 3.5L3 9.9a7 7 0 000 2L1 13.4l2 3.5 2.4-1a7 7 0 001.7 1L8 22h8l.8-2.5a7 7 0 001.7-1l2.4 1 2-3.5-2-1.5a7 7 0 00.1-1z"/></svg></div>
+    <div class="ico" title="Podpora"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 015 0c0 1.5-2.5 2-2.5 3.5M12 17h.01"/></svg></div>
+    <div class="flag" title="Jazyk"><i class="w"></i><i class="b"></i><i class="r"></i></div>
+    <div class="avatar user">L</div>
+  </nav>
+
+  <!-- collapsible side panel -->
+  <aside class="side" id="side">
+    <div class="side-inner">
+
+      <div class="profile">
+        <div class="pic"></div>
+        <div class="nm">Profil</div>
+        <div class="collapse" id="sideCollapse" title="Zavrieť panel">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 6l-6 6 6 6"/></svg>
+        </div>
+      </div>
+
+      <button class="menu-btn accent">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+        Nové hľadanie
+      </button>
+      <button class="menu-btn" id="knowledgeBtn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5a2 2 0 012-2h11v18H6a2 2 0 01-2-2z"/><path d="M17 3h1a2 2 0 012 2v14a2 2 0 01-2 2h-1"/></svg>
+        Vedomosti / Znalosti
+      </button>
+      <button class="menu-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.2"/><path d="M3 19a6 6 0 0112 0M15 14a5 5 0 016 5"/></svg>
+        Agenting sourcing
+        <span class="badge">Beta</span>
+      </button>
+
+      <div class="sec-label">Uložené Projekty</div>
+      <div class="proj">
+        <div class="t">
+          <div class="nm">História hľadania</div>
+          <div class="sub">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v4h4"/></svg>
+            info/dokumenty.md
+          </div>
+        </div>
+        <div class="dots"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div>
+      </div>
+
+      <div class="sec-label history">História hľadania</div>
+      <div id="histList"></div>
+
+    </div>
+  </aside>
+
+  <!-- main -->
+  <main class="main">
+    <div class="canvas-bg"></div>
+
+    <!-- STATE: hero / intro -->
+    <div class="hero" id="view-hero">
+      <div class="watermark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.2"/><path d="M3 19a6 6 0 0112 0M15 14a5 5 0 016 5"/></svg>
+        <span>instaview</span>
+      </div>
+
+      <h1 id="heroTitle"><span id="heroText"></span><span class="caret"></span></h1>
+      <p class="sub">Vyhľadávajte, preverujte a oslovujte špičkové talenty na LinkedIn a webe v priebehu sekúnd.</p>
+
+      <div class="searchbox">
+        <textarea class="sb-input" id="heroInput" placeholder="Popíšte ideálneho kandidáta, vložte popis práce alebo LinkedIn profil…"></textarea>
+        <div class="sb-bottom">
+          <button class="icobtn" id="attachBtn" title="Nahrať dokument">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11l-9 9a5 5 0 01-7-7l9-9a3.5 3.5 0 015 5l-9 9a2 2 0 01-3-3l8-8"/></svg>
+          </button>
+          <div class="sb-right">
+            <div class="model" id="modelBtn">
+              <span id="modelLabel">Hermes 1.0.</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="model-menu" id="modelMenu">
+              <div class="opt sel" data-m="Hermes 1.0.">Hermes 1.0.</div>
+              <div class="opt" data-m="Hermes pro 1.3.">Hermes pro 1.3.</div>
+            </div>
+            <button class="mic" id="micBtn" title="Nahrať hlasovku">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3M8 21h8"/></svg>
+            </button>
+            <button class="search-btn" id="searchBtn">Hľadať</button>
+          </div>
+        </div>
+        <div class="sb-tray" id="sbTray">
+          <div class="tray-file">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v4h4"/></svg>
+            info/dokumenty.md
+            <span class="more">+2 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></span>
+          </div>
+        </div>
+        <input type="file" id="fileInput" multiple hidden>
+      </div>
+
+      <div class="hints">
+        <div class="lead">Pre najlepších kandidátov uveďte detaily ako:</div>
+        <div class="hint-row" id="hintRow">
+          <span class="hint" data-key="title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg> Pozícia</span>
+          <span class="hint" data-key="location"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg> Lokalita</span>
+          <span class="hint" data-key="exp"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg> Roky praxe</span>
+          <span class="hint" data-key="industry"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg> Odvetvie</span>
+          <span class="hint" data-key="skills"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg> Zručnosti</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATE: searching -->
+    <div class="searching hidden" id="view-search" style="position:relative;z-index:1">
+      <div class="spinner"></div>
+      <div id="searchLabel">Vyhľadávam kandidátov…</div>
+    </div>
+
+    <!-- STATE: conversation / thinking -->
+    <div class="convo hidden" id="view-thinking">
+      <div class="convo-chat">
+        <div class="convo-head">
+          <div class="tg" id="convoToggle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></div>
+          <div class="lg"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.2"/><path d="M3 19a6 6 0 0112 0M15 14a5 5 0 016 5"/></svg></div>
+          <h2>Váš sourcing agent</h2>
+        </div>
+
+        <div class="convo-thread" id="convoThread"></div>
+
+        <div class="convo-input">
+          <div class="ph">Odpovedzte, upravte zadanie alebo požiadajte o ďalšie zhody…</div>
+          <div class="ctrls">
+            <button class="ci-up"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
+            <button class="ci-send"><span class="sp"></span></button>
+          </div>
+        </div>
+        <div class="press">Stlačte Enter na odoslanie</div>
+      </div>
+
+      <div class="convo-stage">
+        <!-- blob mode -->
+        <div id="stageBlob" style="display:flex;flex-direction:column;align-items:center;gap:64px">
+          <div class="blob-stage">
+            <div class="bubble">
+              <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div><div class="blob b5"></div>
+              <div class="bubble-text"><span class="thinking-label">Thinking<span class="bb-dots"><span>.</span><span>.</span><span>.</span></span></span></div>
+            </div>
+          </div>
+          <div class="stage-label"><span class="d"></span>Premýšľam…</div>
+        </div>
+        <!-- skeleton mode (updating A/B profile) -->
+        <div id="stageSkel" class="hidden">
+          <div class="skel-grid">
+            <div class="skel-vs">vs</div>
+            <div class="skel-col">
+              <div class="skb t" style="width:55%"></div>
+              <div class="skb u" style="width:38%;height:8px"></div>
+              <div class="skb" style="width:30%;margin-top:14px"></div>
+              <div class="skel-chips"><i style="width:64px"></i><i style="width:80px"></i><i style="width:70px"></i><i style="width:58px"></i><i class="dash" style="width:74px"></i></div>
+              <div class="skb" style="width:26%;margin-top:14px"></div>
+              <div class="skel-chips"><i style="width:90px"></i><i style="width:74px"></i><i class="dash" style="width:90px"></i></div>
+              <div class="skb" style="width:34%;margin-top:14px"></div>
+              <div class="skb" style="width:92%;height:8px"></div><div class="skb" style="width:84%;height:8px"></div><div class="skb" style="width:60%;height:8px"></div>
+              <div class="skb block" style="margin-top:14px"></div>
+              <div class="skb btn" style="margin-top:18px"></div>
+            </div>
+            <div class="skel-col">
+              <div class="skb t" style="width:55%"></div>
+              <div class="skb u" style="width:42%;height:8px"></div>
+              <div class="skb" style="width:30%;margin-top:14px"></div>
+              <div class="skel-chips"><i style="width:64px"></i><i style="width:84px"></i><i style="width:60px"></i><i style="width:88px"></i><i class="dash" style="width:74px"></i></div>
+              <div class="skb" style="width:26%;margin-top:14px"></div>
+              <div class="skel-chips"><i style="width:96px"></i><i style="width:108px"></i><i class="dash" style="width:90px"></i></div>
+              <div class="skb" style="width:34%;margin-top:14px"></div>
+              <div class="skb" style="width:90%;height:8px"></div><div class="skb" style="width:88%;height:8px"></div><div class="skb" style="width:56%;height:8px"></div>
+              <div class="skb block" style="margin-top:14px"></div>
+              <div class="skb btn" style="margin-top:18px"></div>
+            </div>
+          </div>
+          <div class="stage-label" style="justify-content:center;margin-top:30px"><span class="d"></span>Aktualizujem profil…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATE: candidate calibration (A vs B) -->
+    <div class="calib hidden" id="view-calibrate"></div>
+
+    <!-- STATE: candidate cards (results) -->
+    <div class="cardsview hidden" id="view-cards">
+      <div class="filters-row">
+        <button class="ftab active" onclick="setFilter(this)">Top zhoda <span class="ftab-n">20</span></button>
+        <button class="ftab" onclick="setFilter(this)">Všetci <span class="ftab-n">50</span></button>
+        <button class="ftab" onclick="setFilter(this)">Na posúdenie <span class="ftab-n">47</span></button>
+        <button class="ftab" onclick="setFilter(this)">Odmietnutí <span class="ftab-n">4</span></button>
+        <button class="ftab" onclick="setFilter(this)">Oslovia sa <span class="ftab-n">22</span></button>
+        <div class="filter-right">
+          <button class="btn btn-ghost btn-sm" id="selectAllBtn" onclick="toggleSelectAll(this)">Vybrať všetky</button>
+          <button class="btn btn-ghost btn-sm">Zoradiť</button>
+          <button class="btn btn-ghost btn-sm">Filter</button>
+        </div>
+      </div>
+
+      <div class="bulk-bar" id="bulkBar">
+        <span class="bulk-count" id="bulkCount">0 vybraných</span>
+        <div class="bulk-actions">
+          <button class="btn-bulk">Áno</button>
+          <button class="btn-bulk">Možno</button>
+          <button class="btn-bulk">Odmietnuť</button>
+          <button class="btn-bulk btn-bulk-primary">Osloviť emailom</button>
+          <button class="btn-bulk btn-bulk-li"><span style="width:12px;height:12px;background:#fff;color:#0A66C2;font-size:7px;font-weight:900;border-radius:2px;display:inline-flex;align-items:center;justify-content:center;">in</span> LinkedIn</button>
+        </div>
+        <button class="bulk-close" onclick="clearSelection()">&times;</button>
+      </div>
+
+      <div class="cards-grid" id="cardsGrid"></div>
+    </div>
+  </main>
+
+  <!-- Knowledge modal -->
+  <div class="modal-overlay hidden" id="kModal">
+    <div class="modal">
+      <div class="k-top">
+        <div class="k-head">
+          <div class="k-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.5C10.5 5 8 4.5 4 5v13c4-.5 6.5 0 8 1.5 1.5-1.5 4-2 8-1.5V5c-4-.5-6.5 0-8 1.5z"/><path d="M12 6.5V20"/></svg>
+            Vedomosti / Znalosti
+          </div>
+          <div class="k-close" id="kClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+        </div>
+        <div class="k-sub">Kontext, ktorý si má InstaView zapamätať. Relevantné vedomosti automaticky vyvolá počas vašich vyhľadávaní.</div>
+        <div class="k-tabs">
+          <div class="k-tab active" data-t="personal">Osobné</div>
+          <div class="k-tab" data-t="workspace">Pracovný priestor</div>
+          <div class="k-tab" data-t="sugg">Návrhy</div>
+        </div>
+      </div>
+      <div class="k-body" id="kBody"></div>
+    </div>
+  </div>
+
+  <!-- Reach out by email modal -->
+  <div class="modal-overlay hidden" id="emailModal">
+    <div class="modal em-modal">
+      <div class="em-top">
+        <div class="em-head">
+          <div>
+            <div class="em-title">Osloviť emailom</div>
+            <div class="em-sub" id="emSub">Senior Python Developer · Praha, Česko · 1 kandidát s emailom</div>
+          </div>
+          <div class="k-close" id="emClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+        </div>
+        <div class="em-steps">
+          <div class="em-step done" id="step1"><span class="em-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>VYBRAŤ</div>
+          <div class="em-line"></div>
+          <div class="em-step active" id="step2"><span class="em-num">2</span>SKONTROLOVAŤ</div>
+          <div class="em-line"></div>
+          <div class="em-step" id="step3"><span class="em-num">3</span>POTVRDIŤ</div>
+        </div>
+      </div>
+
+      <div class="em-body" id="emBody"></div>
+
+      <div class="em-foot">
+        <span class="ft" id="emFoot">0/1 správ pripravených</span>
+        <div class="em-actions">
+          <button class="em-back" id="emBack">SPÄŤ</button>
+          <button class="em-cont" id="emCont" disabled>POKRAČOVAŤ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---- conversation thread (cumulative) ---- */
+const aiIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.2"/><path d="M3 19a6 6 0 0112 0M15 14a5 5 0 016 5"/></svg>';
+const userIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0114 0"/></svg>';
+let convoMsgs = [];
+function renderConvo(){
+  const t = document.getElementById('convoThread');
+  t.innerHTML = convoMsgs.map(m=>{
+    if(m.r==='user') return `<div class="msg-user"><div class="b">${m.t}</div><div class="av">${userIcon}</div></div>`;
+    if(m.thinking)  return `<div class="msg-ai"><div class="ic">${aiIcon}</div><div class="think-pill"><span class="td"><i></i><i></i><i></i></span>Premýšľam…</div></div>`;
+    return `<div class="msg-ai"><div class="ic">${aiIcon}</div><div class="ai-bubble">${m.t}</div></div>`;
+  }).join('');
+  t.scrollTop = t.scrollHeight;
+}
+
+/* ---- candidate result cards ---- */
+function renderCards(){
+  document.getElementById('cardsGrid').innerHTML = `
+  <div class="ccard" id="card-1">
+    <div class="card-checkbox-wrap"><input type="checkbox" class="card-cb" onchange="onCheck(this,'1')"></div>
+    <div class="card-head">
+      <div class="cand-name">Andrej Pisárčik</div>
+      <div class="cand-title">Senior Software Engineer</div>
+      <div class="cand-meta">
+        <span class="meta-tag">Go · Python · Kubernetes</span>
+        <span class="meta-tag meta-tag-avail">Dostupný ihneď</span>
+        <span class="meta-tag meta-tag-edu">FEI STU Bratislava</span>
+      </div>
+    </div>
+    <div class="card-section"><div class="sec-title">Prečo sa hodí</div><div class="fit-list">
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> Go, Python, Kubernetes &amp; ArgoCD – fintech produkcia</div>
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> AWS certifikovaný · CI/CD pipeline owner</div>
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> Otvorený pre zmenu · aktívny na LI pred 2 dňami</div>
+      <div class="fit-row"><div class="fi-warn">!</div> Bez explicitnej znalosti Terraform</div>
+    </div></div>
+    <div class="card-section"><div class="sec-title">Skúsenosti</div><div class="exp-cols">
+      <div class="exp-list">
+        <div class="exp-row"><div class="exp-dot ed-active"></div><div><div class="exp-role">Senior Software Engineer</div><div class="exp-co">Bitcoin Suisse AG <span class="exp-dur">· 2 r. 2 mes.</span></div></div></div>
+        <div class="exp-row"><div class="exp-dot ed-past"></div><div><div class="exp-role">Backend Developer</div><div class="exp-co">NG Aviation <span class="exp-dur">· 1 r. 5 mes.</span></div></div></div>
+        <div class="exp-row"><div class="exp-dot ed-past"></div><div><div class="exp-role">Full-stack Developer</div><div class="exp-co">CID GmbH <span class="exp-dur">· 3 r.</span></div></div></div>
+      </div>
+      <div class="exp-stat"><div class="exp-stat-num">8</div><div class="exp-stat-unit">rokov praxe</div><div class="exp-stat-sep"></div><div class="exp-stat-req">5+ r.</div><div class="exp-stat-rlbl">požadujete</div></div>
+    </div></div>
+    <div class="card-section"><div class="sec-title">AI analýza</div><div class="ai-text">Silný kandidát s fintech skúsenosťou. Email dostupný — odporúčam osloviť prioritne.</div></div>
+    <div class="card-foot">
+      <div class="contact-row">
+        <div class="contact-chip"><div class="c-dot c-ok"></div><span>andrej@email.sk</span><span class="c-lbl">email</span></div>
+        <div class="contact-chip"><div class="c-dot c-none"></div><span>Nenájdený</span><span class="c-lbl">telefón</span></div>
+      </div>
+      <div class="decision-row"><button class="dec-btn" onclick="decide(this,'yes','1')">Áno</button><button class="dec-btn" onclick="decide(this,'maybe','1')">Možno</button><button class="dec-btn" onclick="decide(this,'no','1')">Nie</button></div>
+      <div class="main-actions"><button class="btn btn-outline btn-full btn-sm">Osloviť emailom</button><button class="btn btn-linkedin btn-full btn-sm"><span class="li-badge-btn">in</span>LinkedIn</button></div>
+      <button class="similar-link">Nájdi podobných kandidátov &#8594;</button>
+    </div>
+  </div>
+
+  <div class="ccard" id="card-2">
+    <div class="card-checkbox-wrap"><input type="checkbox" class="card-cb" onchange="onCheck(this,'2')"></div>
+    <div class="card-head">
+      <div class="cand-name">Jana Kováčová <span class="ideal-tag">Ideálny</span></div>
+      <div class="cand-title">Backend Engineer · Tech Lead</div>
+      <div class="cand-meta">
+        <span class="meta-tag">Python · TypeScript · Microservices</span>
+        <span class="meta-tag meta-tag-avail">Dostupná od marca 2026</span>
+        <span class="meta-tag meta-tag-edu">FIIT STU Bratislava · Ing.</span>
+      </div>
+    </div>
+    <div class="card-section"><div class="sec-title">Prečo sa hodí</div><div class="fit-list">
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> Python, TypeScript · microservices architektúra</div>
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> Tech lead tímu 5 ľudí · agile delivery</div>
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> Email overený · dostupná od marca 2026</div>
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> Banking systémy · high-availability služby</div>
+    </div></div>
+    <div class="card-section"><div class="sec-title">Skúsenosti</div><div class="exp-cols">
+      <div class="exp-list">
+        <div class="exp-row"><div class="exp-dot ed-active"></div><div><div class="exp-role">Backend Engineer / Tech Lead</div><div class="exp-co">Slovenská sporiteľňa <span class="exp-dur">· 3 r. 4 mes.</span></div></div></div>
+        <div class="exp-row"><div class="exp-dot ed-past"></div><div><div class="exp-role">Senior Backend Developer</div><div class="exp-co">Kiwi.com <span class="exp-dur">· 2 r. 1 mes.</span></div></div></div>
+        <div class="exp-row"><div class="exp-dot ed-past"></div><div><div class="exp-role">Software Engineer</div><div class="exp-co">ESET <span class="exp-dur">· 2 r. 5 mes.</span></div></div></div>
+      </div>
+      <div class="exp-stat"><div class="exp-stat-num">7</div><div class="exp-stat-unit">rokov praxe</div><div class="exp-stat-sep"></div><div class="exp-stat-req">5+ r.</div><div class="exp-stat-rlbl">požadujete</div></div>
+    </div></div>
+    <div class="card-section"><div class="sec-title">AI analýza</div><div class="ai-text">Ideálna kombinácia technickej hĺbky a leadership skúseností. Dostupná od marca — prioritne odporúčam e-mail.</div></div>
+    <div class="card-foot">
+      <div class="contact-row">
+        <div class="contact-chip"><div class="c-dot c-ok"></div><span>jana.kovacova@gmail.com</span><span class="c-lbl">email</span></div>
+        <div class="contact-chip"><div class="c-dot c-none"></div><span>Nenájdený</span><span class="c-lbl">telefón</span></div>
+      </div>
+      <div class="decision-row"><button class="dec-btn active-yes">Áno</button><button class="dec-btn" onclick="decide(this,'maybe','2')">Možno</button><button class="dec-btn" onclick="decide(this,'no','2')">Nie</button></div>
+      <div class="main-actions"><button class="btn btn-outline btn-full btn-sm">Osloviť emailom</button><button class="btn btn-linkedin btn-full btn-sm"><span class="li-badge-btn">in</span>LinkedIn</button></div>
+      <button class="similar-link">Nájdi podobných kandidátov &#8594;</button>
+    </div>
+  </div>
+
+  <div class="ccard" id="card-3">
+    <div class="card-checkbox-wrap"><input type="checkbox" class="card-cb" onchange="onCheck(this,'3')"></div>
+    <div class="card-head">
+      <div class="cand-name">Daniel Vaník</div>
+      <div class="cand-title">Full Stack Developer</div>
+      <div class="cand-meta">
+        <span class="meta-tag">TypeScript · Node.js · React</span>
+        <span class="meta-tag meta-tag-avail">Dostupný ihneď</span>
+        <span class="meta-tag meta-tag-edu">FI MU Brno · Bc.</span>
+      </div>
+    </div>
+    <div class="card-section"><div class="sec-title">Prečo sa hodí</div><div class="fit-list">
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> TypeScript, Node.js, React – full-stack senior</div>
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> Vlastní a vedie micro-app na housing platforme</div>
+      <div class="fit-row"><div class="fi-warn">!</div> Email nenájdený · LI správa možná</div>
+      <div class="fit-row"><div class="fi-warn">!</div> Bez Go skúseností (Python áno)</div>
+    </div></div>
+    <div class="card-section"><div class="sec-title">Skúsenosti</div><div class="exp-cols">
+      <div class="exp-list">
+        <div class="exp-row"><div class="exp-dot ed-active"></div><div><div class="exp-role">Full Stack Developer / Tech Lead</div><div class="exp-co">Unicorn Systems <span class="exp-dur">· 4 r.</span></div></div></div>
+        <div class="exp-row"><div class="exp-dot ed-past"></div><div><div class="exp-role">Frontend Developer</div><div class="exp-co">Vacuumlabs <span class="exp-dur">· 2 r. 3 mes.</span></div></div></div>
+        <div class="exp-row"><div class="exp-dot ed-past"></div><div><div class="exp-role">Junior Software Engineer</div><div class="exp-co">Bloomreach <span class="exp-dur">· 1 r. 9 mes.</span></div></div></div>
+      </div>
+      <div class="exp-stat"><div class="exp-stat-num">8</div><div class="exp-stat-unit">rokov praxe</div><div class="exp-stat-sep"></div><div class="exp-stat-req">5+ r.</div><div class="exp-stat-rlbl">požadujete</div></div>
+    </div></div>
+    <div class="card-section"><div class="sec-title">AI analýza</div><div class="ai-text">Dobrý full-stack profil, chýba Go. Odporúčam LinkedIn oslovenie — email nie je dostupný.</div></div>
+    <div class="card-foot">
+      <div class="contact-row">
+        <div class="contact-chip"><div class="c-dot c-none"></div><span>Nenájdený · Zistiť?</span><span class="c-lbl">email</span></div>
+        <div class="contact-chip"><div class="c-dot c-none"></div><span>Nenájdený</span><span class="c-lbl">telefón</span></div>
+      </div>
+      <div class="decision-row"><button class="dec-btn" onclick="decide(this,'yes','3')">Áno</button><button class="dec-btn active-maybe">Možno</button><button class="dec-btn" onclick="decide(this,'no','3')">Nie</button></div>
+      <div class="main-actions"><button class="btn btn-outline btn-full btn-sm">Osloviť emailom</button><button class="btn btn-linkedin btn-full btn-sm"><span class="li-badge-btn">in</span>LinkedIn</button></div>
+      <button class="similar-link">Nájdi podobných kandidátov &#8594;</button>
+    </div>
+  </div>
+
+  <div class="ccard" id="card-4">
+    <div class="card-checkbox-wrap"><input type="checkbox" class="card-cb" onchange="onCheck(this,'4')"></div>
+    <div class="card-head">
+      <div class="cand-name">Martin Hoang</div>
+      <div class="cand-title">AI Software Engineer</div>
+      <div class="cand-meta">
+        <span class="meta-tag">Python · TypeScript · AI/ML</span>
+        <span class="meta-tag meta-tag-avail">Dostupný od júna 2026</span>
+        <span class="meta-tag meta-tag-edu">FAI UTB Zlín · Ing.</span>
+      </div>
+    </div>
+    <div class="card-section"><div class="sec-title">Prečo sa hodí</div><div class="fit-list">
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> Python, TypeScript, Node.js – AI/ML zameranie</div>
+      <div class="fit-row"><div class="fi-ok">&#10003;</div> Skúsenosti z Unicornu + AI startup (2024)</div>
+      <div class="fit-row"><div class="fi-warn">!</div> LI profil verejný · email nenájdený</div>
+      <div class="fit-row"><div class="fi-warn">!</div> Go skúsenosť nepotvrdená</div>
+    </div></div>
+    <div class="card-section"><div class="sec-title">Skúsenosti</div><div class="exp-cols">
+      <div class="exp-list">
+        <div class="exp-row"><div class="exp-dot ed-active"></div><div><div class="exp-role">AI Software Engineer</div><div class="exp-co">Ableneo <span class="exp-dur">· 1 r. 8 mes.</span></div></div></div>
+        <div class="exp-row"><div class="exp-dot ed-past"></div><div><div class="exp-role">Senior Software Engineer</div><div class="exp-co">Unicorn Systems <span class="exp-dur">· 3 r. 6 mes.</span></div></div></div>
+        <div class="exp-row"><div class="exp-dot ed-past"></div><div><div class="exp-role">Backend Developer</div><div class="exp-co">ESET <span class="exp-dur">· 2 r. 7 mes.</span></div></div></div>
+      </div>
+      <div class="exp-stat"><div class="exp-stat-num">7</div><div class="exp-stat-unit">rokov praxe</div><div class="exp-stat-sep"></div><div class="exp-stat-req">5+ r.</div><div class="exp-stat-rlbl">požadujete</div></div>
+    </div></div>
+    <div class="card-section"><div class="sec-title">AI analýza</div><div class="ai-text">Zaujímavé AI zameranie — nižšia zhoda kvôli chýbajúcemu Go. Stojí za overenie e-mailu (1 kredit).</div></div>
+    <div class="card-foot">
+      <div class="contact-row">
+        <div class="contact-chip"><div class="c-dot c-none"></div><span>Nenájdený · Zistiť?</span><span class="c-lbl">email</span></div>
+        <div class="contact-chip"><div class="c-dot c-none"></div><span>Nenájdený</span><span class="c-lbl">telefón</span></div>
+      </div>
+      <div class="decision-row"><button class="dec-btn" onclick="decide(this,'yes','4')">Áno</button><button class="dec-btn" onclick="decide(this,'maybe','4')">Možno</button><button class="dec-btn" onclick="decide(this,'no','4')">Nie</button></div>
+      <div class="main-actions"><button class="btn btn-outline btn-full btn-sm">Osloviť emailom</button><button class="btn btn-linkedin btn-full btn-sm"><span class="li-badge-btn">in</span>LinkedIn</button></div>
+      <button class="similar-link">Nájdi podobných kandidátov &#8594;</button>
+    </div>
+  </div>`;
+}
+
+/* ---- card interactions (global for inline onclick) ---- */
+var selected = {};
+function onCheck(cb, id){ selected[id]=cb.checked; document.getElementById('card-'+id).classList.toggle('selected', cb.checked); updateBulkBar(); }
+function updateBulkBar(){
+  const count = Object.values(selected).filter(Boolean).length;
+  document.getElementById('bulkCount').textContent = count+' vybraných';
+  document.getElementById('bulkBar').classList.toggle('open', count>0);
+  const allCbs=document.querySelectorAll('.card-cb');
+  const allSel=Array.from(allCbs).every(cb=>cb.checked);
+  const btn=document.getElementById('selectAllBtn'); if(btn) btn.textContent = allSel?'Zrušiť výber':'Vybrať všetky';
+}
+function toggleSelectAll(btn){
+  const allCbs=document.querySelectorAll('.card-cb');
+  const allSel=Array.from(allCbs).every(cb=>cb.checked);
+  allCbs.forEach(cb=>{ cb.checked=!allSel; const id=cb.closest('.ccard').id.replace('card-',''); selected[id]=!allSel; document.getElementById('card-'+id).classList.toggle('selected', !allSel); });
+  updateBulkBar();
+}
+function clearSelection(){
+  selected={};
+  document.querySelectorAll('.card-cb').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('#view-cards .ccard').forEach(c=>c.classList.remove('selected'));
+  const btn=document.getElementById('selectAllBtn'); if(btn) btn.textContent='Vybrať všetky';
+  document.getElementById('bulkBar').classList.remove('open');
+}
+function setFilter(el){ document.querySelectorAll('#view-cards .ftab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
+function decide(btn,type,id){ btn.parentElement.querySelectorAll('.dec-btn').forEach(b=>b.className='dec-btn'); btn.classList.add('active-'+type); }
+
+/* ---------- Reach out by email modal ---------- */
+const candMap = {
+  '1':{name:'Andrej Pisárčik', email:'andrej@email.sk',           title:'Senior Software Engineer', loc:'Bratislava', company:'Bitcoin Suisse AG',     skills:'Go, Python, Kubernetes a AWS'},
+  '2':{name:'Jana Kováčová',   email:'jana.kovacova@gmail.com',    title:'Backend Engineer · Tech Lead', loc:'Bratislava', company:'Slovenská sporiteľňa', skills:'Python, TypeScript a microservices'},
+  '3':{name:'Daniel Vaník',    email:'daniel.vanik@gmail.com',     title:'Full Stack Developer', loc:'Brno', company:'Unicorn Systems',          skills:'TypeScript, Node.js a React'},
+  '4':{name:'Martin Hoang',    email:'martin.hoang@gmail.com',     title:'AI Software Engineer', loc:'Zlín', company:'Ableneo',                   skills:'Python, TypeScript a AI/ML'},
+};
+const em = {modal:document.getElementById('emailModal'), list:[]};
+let emStep=2;
+const emBody=document.getElementById('emBody'), emCont=document.getElementById('emCont');
+
+const _gmailIco='<svg width="22" height="22" viewBox="0 0 48 48"><path fill="#4285F4" d="M6 12v24a2 2 0 002 2h6V20l10 7 10-7v18h6a2 2 0 002-2V12"/><path fill="#34A853" d="M6 38h8V20L6 14z"/><path fill="#FBBC05" d="M34 38h8V14l-8 6z"/><path fill="#EA4335" d="M6 12l18 13L42 12l-4-2-14 10L10 10z"/></svg>';
+const _check='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>';
+const _chev='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>';
+const _regenI='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7M21 3v5h-5"/></svg>';
+const _warnI='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>';
+const _planeI='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>';
+
+const pl=(n,a,b,c)=> n===1?a : (n>=2&&n<=4?b:c);
+const emailWord=n=>pl(n,'email','emaily','emailov');
+const candWord =n=>pl(n,'kandidát','kandidáti','kandidátov');
+
+function emInitials(n){ return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+const EM_COMPANY = "Heneken Group";
+function _hash(s){ let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return Math.abs(h); }
+function genEmail(c){
+  const first=c.name.split(' ')[0];
+  const role=c.title.split('·')[0].trim();
+  const subjV=[
+    `${role}: príležitosť v ${EM_COMPANY}`,
+    `${role} — hľadáme práve teba`,
+    `Krátka správa pre ${first} ohľadom novej roly`,
+    `${role} v ${EM_COMPANY} – zaujíma ťa to?`,
+    `${first}, máme pre teba zaujímavú rolu`,
+  ];
+  const bodyV=[
+    `Ahoj ${first},\n\nsom [Tvoje Meno] z ${EM_COMPANY}, globálnej spoločnosti zaoberajúcej sa obchodovaním, výrobou a recykláciou hliníka. Zaujala ma tvoja skúsenosť ako ${c.title} v ${c.company} a práca s technológiami ${c.skills}.\n\nU nás riešime podobné výzvy pri budovaní robustných backend systémov pre naše FinTech projekty. Bolo by to niečo, čo by ťa zaujalo preskúmať?\n\nS pozdravom,`,
+    `Ahoj ${first},\n\nvšimol som si tvoj profil — konkrétne skúsenosť ako ${c.title} v ${c.company} a prácu s ${c.skills}. Presne takého človeka v ${EM_COMPANY} hľadáme do nášho tímu.\n\nMáš 15 minút na krátky nezáväzný hovor tento týždeň?\n\nS pozdravom,`,
+    `Dobrý deň ${first},\n\npíšem z ${EM_COMPANY}. Tvoja prax v oblasti ${c.skills} a pôsobenie v ${c.company} ma zaujali — otvárame rolu, ktorá by mohla sedieť na tvoje zameranie.\n\nMôžem ti poslať viac detailov?\n\nS pozdravom,`,
+    `Ahoj ${first},\n\nhľadáme posilu do tímu v ${EM_COMPANY} a tvoje skúsenosti (${c.skills}) z ${c.company} vyzerajú ako skvelá zhoda. Radi by sme ti predstavili, na čom pracujeme.\n\nDal by sa nájsť priestor na krátke zoznámenie?\n\nS pozdravom,`,
+  ];
+  const h=_hash(c.name||first);
+  return { subject: subjV[h%subjV.length], body: bodyV[h%bodyV.length] };
+}
+function setStep(n){
+  emStep=n;
+  const s2=document.getElementById('step2'), s3=document.getElementById('step3');
+  s2.className='em-step '+(n>2?'done':'active');
+  s2.querySelector('span').className = n>2?'em-dot':'em-num';
+  s2.querySelector('span').innerHTML = n>2?_check:'2';
+  s3.className='em-step '+(n>=3?'active':'');
+}
+function emUpdateCounter(){
+  const ready=em.list.filter(c=>c.ready).length, n=em.list.length;
+  const r=document.getElementById('emReady'); if(r) r.textContent=`${ready}/${n} pripravené`;
+  if(emStep===2){ document.getElementById('emFoot').textContent=`${ready}/${n} správ pripravených`; emCont.disabled = ready<n; }
+  const ap=document.getElementById('agentProg'); if(ap) ap.textContent=ready;
+  const ab=document.getElementById('agentBar'); if(ab) ab.style.width=(n?Math.round(ready/n*100):0)+'%';
+  const ag=document.getElementById('emAgent');
+  if(ag && ready>=n){
+    ag.classList.add('done');
+    ag.querySelector('.agent-txt b').textContent='Agent dokončil';
+    const st=document.getElementById('agentStatus'); if(st) st.textContent='správy sú pripravené — skontrolujte a schváľte';
+  }
+}
+const _senderHTML=`<div class="em-sender"><div class="em-gmail">${_gmailIco}</div><div><div class="em-slbl">ODOSIELATEĽ · GMAIL</div><div class="em-sname">Gmail</div></div></div>`;
+
+function agentBannerHTML(){
+  const ready=em.list.filter(c=>c.ready).length, n=em.list.length, done=ready>=n;
+  const pct=n?Math.round(ready/n*100):0;
+  return `<div class="em-agent ${done?'done':''}" id="emAgent">
+    <div class="agent-row">
+      <span class="agent-dot"></span>
+      <div class="agent-txt"><b>Agent ${done?'dokončil':'beží'}</b> · <span id="agentStatus">${done?'správy sú pripravené — skontrolujte a schváľte':'vyhľadáva profily a píše personalizované správy…'}</span></div>
+      <div class="agent-prog"><span id="agentProg">${ready}</span>/${n}</div>
+    </div>
+    <div class="agent-bar"><i id="agentBar" style="width:${pct}%"></i></div>
+  </div>`;
+}
+function reviewCard(c,i){
+  const g=c.ready;
+  return `<div class="em-msg ${i===0?'':'collapsed'}" data-i="${i}">
+    <div class="em-msg-head">
+      <div class="em-av">${emInitials(c.name)}</div>
+      <div class="em-name">${c.name}</div>
+      <div class="em-email">${c.email}</div>
+      <div class="em-badge ${g?'ready':'gen'}">${g?'Pripravené':'<span class="sp"></span>Generuje sa…'}</div>
+      <div class="em-chev">${_chev}</div>
+    </div>
+    <div class="em-msg-body">
+      <div class="em-flbl">PREDMET</div>
+      <input class="em-subject" value="${esc(c.subject||'')}">
+      <div class="em-flbl mt">SPRÁVA</div>
+      <textarea class="em-text" placeholder="Generujem správu…">${esc(c.body||'')}</textarea>
+      <div class="em-msg-foot"><button class="em-regen" data-i="${i}">${_regenI}REGENEROVAŤ</button><span class="em-credit">1 kredit</span></div>
+    </div>
+  </div>`;
+}
+function buildReview(){
+  emBody.innerHTML = agentBannerHTML() + _senderHTML +
+    `<div class="em-genhead"><span>VYGENEROVANÉ SPRÁVY</span><span id="emReady">0/${em.list.length} pripravené</span></div>
+     <div class="em-list">${em.list.map(reviewCard).join('')}</div>`;
+  emBody.querySelectorAll('.em-msg-head').forEach(h=>h.onclick=()=>h.closest('.em-msg').classList.toggle('collapsed'));
+  emBody.querySelectorAll('.em-regen').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); generateCard(+b.dataset.i, true); });
+  emBody.querySelectorAll('.em-subject').forEach(inp=>inp.oninput=function(){ em.list[+this.closest('.em-msg').dataset.i].subject=this.value; });
+  emBody.querySelectorAll('.em-text').forEach(t=>t.oninput=function(){ em.list[+this.closest('.em-msg').dataset.i].body=this.value; });
+  emUpdateCounter();
+}
+function generateCard(i, animate){
+  const c=em.list[i];
+  const card=emBody.querySelector(`.em-msg[data-i="${i}"]`); if(!card) return;
+  const badge=card.querySelector('.em-badge'), subj=card.querySelector('.em-subject'), text=card.querySelector('.em-text');
+  const g=genEmail(c); c.ready=false; c.subject=g.subject; c.body=g.body;
+  badge.className='em-badge gen'; badge.innerHTML='<span class="sp"></span>Generuje sa…';
+  clearTimeout(c._t);
+  const finish=()=>{ c.ready=true; badge.className='em-badge ready'; badge.textContent='Pripravené'; emUpdateCounter(); };
+  if(animate && !card.classList.contains('collapsed')){
+    subj.value=''; text.value=''; let k=0;
+    const step=()=>{ subj.value=g.subject; text.value=g.body.slice(0,k); text.scrollTop=text.scrollHeight;
+      if(k<g.body.length){ k+=4; c._t=setTimeout(step,10); } else finish(); };
+    c._t=setTimeout(step, 240);
+  } else {
+    subj.value=g.subject; text.value=g.body; finish();
+  }
+}
+function startGeneration(){
+  const n=em.list.length; let i=0;
+  (function tick(){
+    if(i>=n){ emUpdateCounter(); return; }
+    generateCard(i, i===0);
+    i++;
+    setTimeout(tick, i===1?650:55);
+  })();
+}
+
+function emApprCount(){ return em.list.filter(c=>c.approved).length; }
+function updateSendBtn(){
+  const a=emApprCount(), n=em.list.length;
+  emCont.disabled=a===0;
+  emCont.innerHTML=`${_planeI} ODOSLAŤ ${a} ${emailWord(a).toUpperCase()}`;
+  const lbl=document.getElementById('emApprN'); if(lbl) lbl.textContent=a;
+  const sn=document.getElementById('emSumN'); if(sn) sn.textContent=`${a} ${emailWord(a)}`;
+  document.getElementById('emFoot').textContent=`${a}/${n} schválených`;
+}
+function buildConfirm(){
+  em.list.forEach(c=>c.approved=!!c.ready);
+  const a=emApprCount();
+  emBody.innerHTML = `
+    <div class="em-summary">
+      <div><div class="em-sum-lbl">PREHĽAD OSLOVENIA · NA SCHVÁLENIE</div><div class="em-sum-n" id="emSumN">${a} ${emailWord(a)}</div></div>
+      <div class="em-gmailtag">${_gmailIco} Gmail</div>
+    </div>
+    <div class="em-apprbar"><span class="lbl"><b id="emApprN">${a}</b> z ${em.list.length} schválených na odoslanie</span><button class="em-apprbtn" id="emApprAll">Zrušiť výber</button></div>
+    <div class="em-list">${em.list.map((c,i)=>`<label class="em-rcpt ${c.approved?'':'off'}" data-i="${i}"><input type="checkbox" class="em-appr" ${c.approved?'checked':''}><div class="em-av">${emInitials(c.name)}</div><div class="em-name">${c.name}</div><div class="em-email">${c.email}</div></label>`).join('')}</div>
+    <div class="em-warn">${_warnI}<div>Emaily sa odošlú okamžite z vášho pripojeného účtu. Túto akciu nie je možné vrátiť späť. Pred odoslaním si správy ešte raz skontrolujte.</div></div>`;
+  emBody.querySelectorAll('.em-appr').forEach(cb=>cb.onchange=function(){
+    const row=this.closest('.em-rcpt'); const c=em.list[+row.dataset.i];
+    c.approved=this.checked; row.classList.toggle('off', !this.checked); updateSendBtn();
+  });
+  document.getElementById('emApprAll').onclick=function(){
+    const all=em.list.every(c=>c.approved);
+    em.list.forEach(c=>c.approved=!all);
+    emBody.querySelectorAll('.em-rcpt').forEach((row,i)=>{ row.classList.toggle('off', all); row.querySelector('.em-appr').checked=!all; });
+    this.textContent = all?'Vybrať všetky':'Zrušiť výber';
+    updateSendBtn();
+  };
+}
+
+function openWith(list){
+  em.list = list.map(c=>({...c, ready:false, approved:false}));
+  if(!em.list.length) return;
+  const n=em.list.length, c0=em.list[0];
+  document.getElementById('emSub').textContent=`${c0.title} · ${c0.loc} · ${n} ${candWord(n)} s emailom`;
+  setStep(2);
+  emCont.textContent='POKRAČOVAŤ'; emCont.disabled=true;
+  em.modal.classList.remove('hidden');
+  buildReview();
+  startGeneration();
+}
+function openEmail(ids){ openWith(ids.filter(id=>candMap[id]).map(id=>({...candMap[id], id}))); }
+function closeEmail(){ em.list.forEach(c=>clearTimeout(c._t)); em.modal.classList.add('hidden'); }
+
+/* ---- synthetic pool (up to 100 recipients) ---- */
+const _FN=['Andrej','Jana','Daniel','Martin','Peter','Lucia','Tomáš','Eva','Marek','Zuzana','Jakub','Petra','Michal','Katarína','Lukáš','Barbora','Filip','Simona','Matej','Veronika','Pavol','Monika','Adam','Nina','Patrik','Dominika','Roman','Lenka','Juraj','Andrea'];
+const _LN=['Pisárčik','Kováčová','Vaník','Novák','Horváth','Tóth','Baláž','Molnár','Kráľ','Szabó','Procházka','Kučera','Varga','Németh','Krajčovič','Richter','Marko','Šimko','Bartoš','Urban','Hudák','Beňo','Dušek','Tkáč','Slávik'];
+const _TT=['Senior Software Engineer','Backend Engineer','Full Stack Developer','AI Software Engineer','Python Developer','DevOps Engineer','Data Engineer','Platform Engineer'];
+const _CO=['Bitcoin Suisse AG','Slovenská sporiteľňa','Unicorn Systems','ESET','Kiwi.com','Vacuumlabs','Ableneo','Pixel Federation','Sygic','Exponea'];
+const _SK=['Go, Python a Kubernetes','Python, TypeScript a microservices','Java, Spring a AWS','React, Node.js a GraphQL','Python, Django a PostgreSQL','C#, .NET a Azure','Python, ML a GenAI','Go, gRPC a Docker'];
+const _LOC=['Bratislava','Košice','Praha','Brno','Žilina','Nitra','Wien','Remote'];
+function _stripDia(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function poolList(n){
+  const out=[];
+  for(let i=0;i<n;i++){
+    const fn=_FN[i%_FN.length], ln=_LN[(i*7+3)%_LN.length], name=`${fn} ${ln}`;
+    out.push({ id:'p'+i, name,
+      email:`${_stripDia(fn).toLowerCase()}.${_stripDia(ln).toLowerCase()}${i>9?i:''}@email.sk`,
+      title:_TT[i%_TT.length], loc:_LOC[i%_LOC.length], company:_CO[i%_CO.length], skills:_SK[i%_SK.length] });
+  }
+  return out;
+}
+
+document.getElementById('emClose').onclick=closeEmail;
+em.modal.addEventListener('click', e=>{ if(e.target===em.modal) closeEmail(); });
+document.getElementById('emBack').onclick=()=>{
+  if(emStep>2){ setStep(2); emCont.textContent='POKRAČOVAŤ'; buildReview(); }
+  else closeEmail();
+};
+emCont.onclick=function(){
+  if(emStep===2){ setStep(3); buildConfirm(); updateSendBtn(); }
+  else { this.disabled=true; this.innerHTML='ODOSIELAM…'; setTimeout(closeEmail, 1300); }
+};
+
+/* open email from a candidate card or bulk bar */
+document.getElementById('view-cards').addEventListener('click', e=>{
+  const btn=e.target.closest('.btn-outline');
+  if(btn && btn.textContent.trim().startsWith('Osloviť')){
+    const card=btn.closest('.ccard');
+    if(card){ const id=card.id.replace('card-',''); openWith([{...candMap[id], id}, ...poolList(11)]); }
+    return;
+  }
+  const bulk=e.target.closest('.btn-bulk-primary');
+  if(bulk){
+    const ids=Object.keys(selected).filter(k=>selected[k]);
+    const allCbs=document.querySelectorAll('.card-cb');
+    const allSel=allCbs.length && Array.from(allCbs).every(cb=>cb.checked);
+    if(allSel) openWith(poolList(100));         // demo: celý zoznam (až 100)
+    else if(ids.length) openEmail(ids);
+  }
+});
+
+/* ---- view switching ---- */
+function hideMain(){
+  ['view-hero','view-search','view-thinking','view-calibrate','view-cards']
+    .forEach(id=>document.getElementById(id).classList.add('hidden'));
+}
+function showCalibrate(){ hideMain(); renderCalib(); document.getElementById('view-calibrate').classList.remove('hidden'); }
+function showHero(){ hideMain(); document.getElementById('view-hero').classList.remove('hidden'); }
+function showThinking(mode){
+  hideMain();
+  document.getElementById('stageBlob').style.display = mode==='skel' ? 'none' : 'flex';
+  document.getElementById('stageSkel').classList.toggle('hidden', mode!=='skel');
+  document.getElementById('view-thinking').classList.remove('hidden');
+}
+function showCards(){ hideMain(); document.getElementById('view-cards').classList.remove('hidden'); }
+
+/* ---- side menu: history list ---- */
+(function(){
+  const dots = '<div class="dots"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></div>';
+  const list = document.getElementById('histList');
+  for(let i=0;i<6;i++){
+    const d=document.createElement('div'); d.className='hist-item';
+    d.innerHTML = 'História hľadania' + (i===0 ? dots : '');
+    list.appendChild(d);
+  }
+})();
+
+/* ---- rail toggle (open side menu) ---- */
+document.getElementById('railToggle').onclick = ()=>{
+  document.getElementById('side').classList.toggle('open');
+};
+document.getElementById('sideCollapse').onclick = ()=>{
+  document.getElementById('side').classList.remove('open');
+};
+document.getElementById('convoToggle').onclick = ()=>{
+  document.getElementById('side').classList.toggle('open');
+};
+
+/* ---- model dropdown ---- */
+const modelMenu = document.getElementById('modelMenu');
+document.getElementById('modelBtn').onclick = (e)=>{ e.stopPropagation(); modelMenu.classList.toggle('open'); };
+modelMenu.querySelectorAll('.opt').forEach(o=>{
+  o.onclick = ()=>{
+    modelMenu.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
+    o.classList.add('sel');
+    document.getElementById('modelLabel').textContent = o.dataset.m;
+    modelMenu.classList.remove('open');
+  };
+});
+document.addEventListener('click', ()=>modelMenu.classList.remove('open'));
+
+/* ---- attach / file upload ---- */
+const tray = document.getElementById('sbTray');
+document.getElementById('attachBtn').onclick = ()=>document.getElementById('fileInput').click();
+document.getElementById('fileInput').onchange = function(){
+  [...this.files].forEach(f=>{
+    const c=document.createElement('div'); c.className='tray-file';
+    c.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v4h4"/></svg>${f.name}`;
+    tray.appendChild(c);
+  });
+};
+
+/* ---- mic / voice recording ---- */
+const wave = ()=>'<span class="wave">'+Array.from({length:14},()=>`<i style="height:${4+Math.round(Math.random()*10)}px"></i>`).join('')+'</span>';
+let recStart=0;
+document.getElementById('micBtn').onclick = function(){
+  const on = this.classList.toggle('rec');
+  if(on){ recStart=Date.now(); }
+  else {
+    const sec = Math.max(1, Math.round((Date.now()-recStart)/1000));
+    const mm = String(Math.floor(sec/60)), ss = String(sec%60).padStart(2,'0');
+    const chip=document.createElement('div'); chip.className='voice-chip';
+    chip.innerHTML = `<span class="play"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l11-7z"/></svg></span>
+      ${wave()}<span class="dur">${mm}:${ss}</span>
+      <span class="del"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></span>`;
+    chip.querySelector('.del').onclick = ()=>chip.remove();
+    tray.appendChild(chip);
+  }
+};
+
+/* ---- live hint detection (chip turns green when detail is mentioned) ---- */
+const hintRules = {
+  title:    /\b(developer|vývojár|programátor|designer|dizajnér|manager|manažér|engineer|inžinier|analytik|analyst|specialist|špecialista|lead|architekt|architect|marketér|recruiter|account|consultant|konzultant|tester|devops|scientist|pozícia|pozíciu|role|rola)\b/i,
+  location: /\b(bratislav\w*|košic\w*|praha|prahe|brno|wien|viedeň|london|berlin|remote|vzdialen\w*|na diaľku|slovensk\w*|čr|cesko|česko|eu|europe|európa|lokalit\w*|mesto|hybrid\w*)\b/i,
+  exp:      /(\b\d+\s*\+?\s*(rok\w*|year\w*|yr|yrs|ročn\w*)\b|\b(senior|junior|medior)\b|praxe|praxou|skúsenost\w*|experience)/i,
+  industry: /\b(fintech|banking|bank\w*|it|software|saas|healthcare|zdravotn\w*|automotive|automob\w*|retail|e-?commerce|gaming|telco|telekom\w*|energetik\w*|odvetv\w*|priemysel|sektor|industry)\b/i,
+  skills:   /\b(python|java\w*|javascript|typescript|react|node|sql|aws|azure|gcp|docker|kubernetes|figma|photoshop|excel|ml|ai|llm|genai|c\+\+|c#|go|rust|php|ruby|swift|kotlin|zručnost\w*|skills?|technológ\w*)\b/i,
+};
+function refreshHints(){
+  const t = document.getElementById('heroInput').value;
+  document.querySelectorAll('#hintRow .hint').forEach(h=>{
+    const ok = hintRules[h.dataset.key]?.test(t);
+    h.classList.toggle('done', !!ok);
+  });
+}
+document.getElementById('heroInput').addEventListener('input', refreshHints);
+
+/* ---- search flow ---- */
+function submit(){
+  const q = document.getElementById('heroInput').value.trim() || 'python developer v prahe';
+  convoMsgs = [{r:'user',t:q},{r:'ai',thinking:true}];
+  renderConvo();
+  showThinking('blob');
+  setTimeout(()=>{
+    convoMsgs = [
+      {r:'user',t:q},
+      {r:'ai',t:'Aby som našiel tých najlepších, potreboval by som pár detailov:<br>Akú senioritu má mať rola?<br>Aký je preferovaný typ úväzku?<br>Sú nejaké ďalšie špecifické požiadavky?'},
+    ];
+    renderConvo();
+    setTimeout(()=>{
+      convoMsgs.push({r:'user',t:'Akú senioritu by mal kandidát mať? → Senior (5+ rokov)<br>Aký je preferovaný typ úväzku? → Onsite'});
+      convoMsgs.push({r:'ai',t:'Ďakujem za upresnenie. Načrtol som dva počiatočné smery pre rolu Python developera podľa tvojich požiadaviek. Pozri si ich vpravo a vyber, ktorý je bližšie k tvojej predstave — alebo či ich mám skombinovať.'});
+      renderConvo();
+      showCalibrate();
+    }, 1600);
+  }, 3500);
+}
+document.getElementById('searchBtn').onclick = submit;
+document.getElementById('heroInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); submit(); }
+});
+
+/* ---- after picking a candidate template → think again, then show cards ---- */
+function continueCalib(cand){
+  convoMsgs.push({r:'user',t:`Vybraný ${cand}. Spusti hľadanie podľa tohto profilu.`});
+  convoMsgs.push({r:'ai',thinking:true});
+  renderConvo();
+  showThinking('skel');
+  setTimeout(()=>{
+    convoMsgs.pop();
+    convoMsgs.push({r:'ai',t:'Hotovo — našiel som <strong>50 kandidátov</strong>, 20 s najvyššou zhodou. Výsledky vidíš vpravo.'});
+    renderConvo();
+    renderCards();
+    showCards();
+  }, 3800);
+}
+
+/* ---------- Candidate calibration (A vs B) ---------- */
+const calibData = {
+  A:{
+    title:"Kandidát A", sub:"Senior Python Developer — štruktúrované enterprise prostredie",
+    tech:["Python","Django","Flask","PostgreSQL","AWS","Docker"],
+    soft:["Tímová práca","Riešenie problémov","Mentoring"],
+    langs:["Angličtina"],
+    role:`<strong>Rola:</strong> Senior Python Developer<br>
+      <strong>Prax:</strong> Senior Backend Engineer — medzinárodná FinTech firma (5 rokov)<br>
+      <strong>Prax:</strong> Python Developer — softvérová firma (3 roky)<br>
+      <strong>Vzdelanie:</strong> MSc Computer Science, STU BA`,
+    profile:"Tento kandidát prináša rozsiahle skúsenosti zo štruktúrovaného korporátneho prostredia. Je expert na robustné a škálovateľné backend systémy a má skúsenosti s bežne používanými enterprise technológiami.",
+  },
+  B:{
+    title:"Kandidát B", sub:"Senior Full-stack Python Developer — rýchle tempo startupu",
+    tech:["Python","FastAPI","React","MongoDB","GCP","Kubernetes"],
+    soft:["Adaptabilita","Komunikácia","Proaktivita"],
+    langs:["Angličtina"],
+    role:`<strong>Rola:</strong> Machine Learning Engineer (Startup)<br>
+      <strong>Prax:</strong> ~5 rokov (rýchly rast z mid-levelu)<br>
+      <strong>Prax:</strong> Software Engineer — produktová agentúra (4 roky)<br>
+      <strong>Vzdelanie:</strong> BSc Informatics, UK BA`,
+    profile:"Tento kandidát je agilný a produktovo orientovaný vývojár schopný pracovať naprieč celým stackom. Má skúsenosti s modernými technológiami a je zvyknutý na rýchle tempo startupu.",
+  },
+};
+const pencilSvg = '<span class="pencil"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.2 5.2l3.6 3.6M16.7 3.7a2.5 2.5 0 113.6 3.6L6.5 21H3v-3.5z"/></svg></span>';
+
+function chipsHTML(list){
+  return list.map(s=>`<span class="ctag">${esc(s)} <button class="ctag-x" title="Odstrániť">&times;</button></span>`).join('')
+    + `<button class="ctag-add">+ Pridať</button>`;
+}
+function candHTML(c){
+  return `
+    <div class="cand">
+      <div>
+        <div class="cand-title"><span class="dot"></span><h3>${c.title}</h3></div>
+        <p class="cand-sub">${c.sub}</p>
+      </div>
+      <div class="csec"><div class="csec-h"><span class="ln"></span>Technické zručnosti</div><div class="chips-wrap">${chipsHTML(c.tech)}</div></div>
+      <div class="csec"><div class="csec-h"><span class="ln"></span>Soft skills</div><div class="chips-wrap">${chipsHTML(c.soft)}</div></div>
+      <div class="csec"><div class="csec-h"><span class="ln"></span>Jazyky</div><div class="chips-wrap">${chipsHTML(c.langs)}</div></div>
+      <div class="csec"><div class="csec-h"><span class="ln"></span>Súčasná rola a prax ${pencilSvg}</div><div class="cedit" contenteditable="true">${c.role}</div></div>
+      <div class="csec"><div class="csec-h"><span class="ln"></span>Profil (Highlights) ${pencilSvg}</div><div class="cprofile" contenteditable="true">${esc(c.profile)}</div></div>
+      <button class="cbtn" data-cand="${c.title}">Pokračovať a hľadať ľudí ako ${c.title} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h13M12 6l6 6-6 6"/></svg></button>
+    </div>`;
+}
+function renderCalib(){
+  document.getElementById('view-calibrate').innerHTML = `
+    <div class="calib-head">
+      <h2>Vyberte si, ako má vyzerať ideálny kandidát</h2>
+      <p>Tieto dva profily slúžia len ako vzor pre nastavenie parametrov hľadania. Porovnajte ich a vyberte ten, ktorý lepšie vystihuje vaše potreby — aby sme vedeli, aký typ človeka máme začať reálne hľadať.</p>
+    </div>
+    <div class="calib-grid">
+      <div class="divider"></div><div class="vs">vs</div>
+      ${candHTML(calibData.A)}
+      ${candHTML(calibData.B)}
+    </div>`;
+}
+
+/* chip add/remove + pencil + continue (event delegation) */
+function mkChip(v){
+  const s=document.createElement('span'); s.className='ctag';
+  s.innerHTML = `${esc(v)} <button class="ctag-x" title="Odstrániť">&times;</button>`;
+  return s;
+}
+document.getElementById('view-calibrate').addEventListener('click', e=>{
+  if(e.target.classList.contains('ctag-x')){ e.target.closest('.ctag').remove(); return; }
+  if(e.target.closest('.pencil')){
+    const ed = e.target.closest('.csec').querySelector('.cedit,.cprofile'); if(ed) ed.focus(); return;
+  }
+  const addBtn = e.target.closest('.ctag-add');
+  if(addBtn){
+    const inp=document.createElement('input'); inp.className='ctag-input'; inp.placeholder='Napíšte a Enter…';
+    addBtn.style.display='none'; addBtn.parentNode.insertBefore(inp, addBtn); inp.focus();
+    const finish=()=>{ if(inp.isConnected) inp.remove(); addBtn.style.display=''; };
+    inp.addEventListener('keydown',ev=>{
+      if(ev.key==='Enter'){ ev.preventDefault(); const v=inp.value.trim(); if(v){ inp.parentNode.insertBefore(mkChip(v), inp); inp.value=''; } }
+      else if(ev.key==='Escape'){ finish(); }
+    });
+    inp.addEventListener('blur', ()=>{ const v=inp.value.trim(); if(v) inp.parentNode.insertBefore(mkChip(v), inp); finish(); });
+    return;
+  }
+  const cont = e.target.closest('.cbtn');
+  if(cont){ continueCalib(cont.dataset.cand); }
+});
+
+/* ---------- Knowledge modal ---------- */
+const KN = { personal:[], workspace:[] };
+const SUGG = [
+  "Som HR s 20-ročnou praxou. Seniorných vývojárov hľadám hlavne cez GitHub, Stack Overflow a tech komunity, nie len LinkedIn.",
+  "Pri sourcingu uprednostňujem kandidátov s open-source príspevkami a aktívnym portfóliom.",
+  "Pre fintech pozície vždy overujem skúsenosti s reguláciami a relevantné certifikácie.",
+  "Kandidátov oslovujem personalizovanou správou, ktorá odkazuje na ich konkrétny projekt alebo článok.",
+];
+let kTab='personal', kAdding=false;
+
+const bookEmpty = '<svg class="bk" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 6.5C10.5 5 8 4.5 4 5v13c4-.5 6.5 0 8 1.5 1.5-1.5 4-2 8-1.5V5c-4-.5-6.5 0-8 1.5z"/><path d="M12 6.5V20"/></svg>';
+const dotIc = '<span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.5C10.5 5 8 4.5 4 5v13c4-.5 6.5 0 8 1.5 1.5-1.5 4-2 8-1.5V5c-4-.5-6.5 0-8 1.5z"/></svg></span>';
+const delIc = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const plusIc = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>';
+
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function renderK(){
+  document.querySelectorAll('.k-tab').forEach(t=>t.classList.toggle('active', t.dataset.t===kTab));
+  const body=document.getElementById('kBody');
+
+  if(kAdding){
+    body.innerHTML = `
+      <div class="k-form">
+        <label>Vaša vedomosť / znalosť</label>
+        <textarea id="kText" placeholder="Napríklad: Som HR s 20-ročnou praxou. Pri hľadaní seniorných vývojárov sa zameriavam na GitHub, Stack Overflow a tech komunity, nie len na LinkedIn…"></textarea>
+        <div class="k-formrow">
+          <button class="k-btn-cancel" id="kCancel">Zrušiť</button>
+          <button class="k-btn-save" id="kSave">Uložiť</button>
+        </div>
+      </div>`;
+    const ta=document.getElementById('kText'); ta.focus();
+    document.getElementById('kCancel').onclick=()=>{kAdding=false;renderK();};
+    document.getElementById('kSave').onclick=()=>{
+      const v=ta.value.trim(); if(v){ KN[kTab].push(v); } kAdding=false; renderK();
+    };
+    return;
+  }
+
+  if(kTab==='sugg'){
+    body.innerHTML = `
+      <div class="k-listhead"><h4>Navrhované vedomosti — pridajte ich jedným klikom</h4></div>
+      <div class="k-list">${SUGG.map((s,i)=>`
+        <div class="k-item">${dotIc}<p>${esc(s)}</p>
+        <button class="sugg-add" data-i="${i}">+ Pridať</button></div>`).join('')}
+      </div>`;
+    body.querySelectorAll('.sugg-add').forEach(b=>b.onclick=()=>{
+      KN.personal.push(SUGG[+b.dataset.i]); kTab='personal'; renderK();
+    });
+    return;
+  }
+
+  const arr = KN[kTab];
+  if(arr.length===0){
+    const txt = kTab==='personal'
+      ? ['Zatiaľ žiadne osobné vedomosti','Pridajte vedomosti, ktoré si počas vašich vyhľadávaní vyvoláme.']
+      : ['Zatiaľ žiadne vedomosti pracovného priestoru','Vedomosti zdieľané s celým tímom sa zobrazia tu.'];
+    body.innerHTML = `<div class="k-empty">${bookEmpty}
+      <h3>${txt[0]}</h3><p>${txt[1]}</p>
+      <button class="k-add" data-add>${plusIc} Pridať nové</button></div>`;
+  } else {
+    body.innerHTML = `
+      <div class="k-listhead"><h4>${arr.length} ${arr.length===1?'vedomosť':'vedomostí'}</h4>
+        <button class="k-add" style="margin:0;padding:8px 14px" data-add>${plusIc} Pridať nové</button></div>
+      <div class="k-list">${arr.map((s,i)=>`
+        <div class="k-item">${dotIc}<p>${esc(s)}</p>
+        <span class="del" data-i="${i}">${delIc}</span></div>`).join('')}
+      </div>`;
+    body.querySelectorAll('.del').forEach(b=>b.onclick=()=>{ arr.splice(+b.dataset.i,1); renderK(); });
+  }
+  body.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{ kAdding=true; renderK(); });
+}
+
+document.getElementById('knowledgeBtn').onclick = ()=>{
+  kTab='personal'; kAdding=false; renderK();
+  document.getElementById('kModal').classList.remove('hidden');
+};
+document.getElementById('kClose').onclick = ()=>document.getElementById('kModal').classList.add('hidden');
+document.getElementById('kModal').addEventListener('click', e=>{
+  if(e.target.id==='kModal') document.getElementById('kModal').classList.add('hidden');
+});
+document.querySelectorAll('.k-tab').forEach(t=>t.onclick=()=>{ kTab=t.dataset.t; kAdding=false; renderK(); });
+
+/* ---------- animated hero title (typewriter) ---------- */
+const userName = "Ľuboš";    // ak je prázdne "", použije sa názov firmy
+const companyName = "Heneken Group";
+const _who = userName || companyName;
+const heroPhrases = [
+  `Ahoj ${_who}, koho ti dnes pomôžem nájsť?`,
+  "Ako ti dnes môžem pomôcť?",
+  "Kľudne si nahraj dokument so svojimi skúsenosťami",
+  "Popíš ideálneho kandidáta a ja sa pustím do hľadania",
+];
+(function typeHero(){
+  const el=document.getElementById('heroText'); if(!el) return;
+  let pi=0;
+  function run(){
+    const txt=heroPhrases[pi]; let i=0;
+    (function type(){
+      el.textContent=txt.slice(0,i);
+      if(i<txt.length){ i++; setTimeout(type, 60); }
+      else setTimeout(erase, 9000);
+    })();
+    function erase(){
+      el.textContent=txt.slice(0,i);
+      if(i>0){ i--; setTimeout(erase, 30); }
+      else { pi=(pi+1)%heroPhrases.length; setTimeout(run, 350); }
+    }
+  }
+  run();
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InstaView · Agents</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            border: "hsl(240 5.9% 90%)",
+            background: "hsl(240 4.8% 95.9%)",
+            foreground: "hsl(240 10% 3.9%)",
+            card: "hsl(0 0% 100%)",
+            muted: "hsl(240 4.8% 95.9%)",
+            "muted-foreground": "hsl(240 5% 28%)",
+          },
+          borderRadius: {
+            sm: "calc(0.625rem - 4px)",
+            md: "calc(0.625rem - 2px)",
+            lg: "0.625rem",
+            xl: "calc(0.625rem + 4px)",
+          },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { background: hsl(240 4.8% 95.9%); }
+  </style>
+</head>
+<body class="text-foreground">
+  <div class="flex min-h-screen bg-background text-foreground">
+    <!-- Sidebar -->
+    <aside class="flex w-64 shrink-0 flex-col border-r border-border bg-card">
+      <div class="flex items-center justify-between px-5 py-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="users" class="h-6 w-6 text-[#003AB8]"></i>
+          <span class="text-xl font-bold text-[#003AB8]">instaview</span>
+        </div>
+        <i data-lucide="panel-left-close" class="h-5 w-5 text-muted-foreground"></i>
+      </div>
+
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+
+      <div class="px-4 py-3">
+        <p class="mb-1 text-xs text-muted-foreground">Aktuálna firma</p>
+        <button class="flex w-full items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm">
+          <span class="flex items-center gap-2">
+            <span class="flex h-6 w-6 items-center justify-center rounded bg-[#003AB8]/20 text-xs font-semibold text-[#003AB8]">TE</span>
+            Testovanie 2
+          </span>
+          <i data-lucide="chevrons-up-down" class="h-4 w-4 text-muted-foreground"></i>
+        </button>
+      </div>
+
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+
+      <div class="px-4 py-4">
+        <div class="flex items-center justify-between rounded-lg border border-[#003AB8]/30 bg-[#003AB8]/10 px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sparkles" class="h-4 w-4 text-[#003AB8]"></i>
+            <div class="leading-tight">
+              <p class="text-xs text-muted-foreground">AI kredity</p>
+              <p class="text-sm font-semibold">188.48</p>
+            </div>
+          </div>
+          <span class="rounded-md bg-[#003AB8] px-2.5 py-0.5 text-xs font-semibold text-white">Kúpiť</span>
+        </div>
+      </div>
+
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+
+      <nav class="flex-1 space-y-1 px-3 py-3" id="mainNav"></nav>
+
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+
+      <div class="space-y-1 px-3 py-3" id="bottomNav"></div>
+
+      <div class="border-t border-[hsl(240_6%_80%)]"></div>
+
+      <div class="space-y-1 px-3 py-3">
+        <button class="flex w-full items-center justify-between rounded-md bg-muted px-3 py-2 text-sm">
+          <span class="flex items-center gap-2">🇸🇰 SK</span>
+          <i data-lucide="chevrons-up-down" class="h-4 w-4 text-muted-foreground"></i>
+        </button>
+        <button class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm">
+          <span class="flex items-center gap-2">
+            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-semibold">L</span>
+            Luboš Repka
+          </span>
+          <i data-lucide="chevrons-up-down" class="h-4 w-4 text-muted-foreground"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto px-8 py-6">
+      <!-- Header -->
+      <div class="mb-6 flex items-start justify-between">
+        <div>
+          <h1 class="text-3xl font-bold">Agenti</h1>
+          <p class="mt-1 text-muted-foreground">Spravujte svojich agentov a vytvárajte nových</p>
+        </div>
+        <button onclick="location.href='design-agent.html'" class="rounded-md bg-[#003AB8] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#002a85]">+ Vytvoriť agenta</button>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="mb-3 flex flex-wrap items-center gap-3">
+        <div class="relative min-w-[240px] flex-1">
+          <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"></i>
+          <input placeholder="Hľadať agentov podľa mena..." class="h-9 w-full rounded-full border border-border bg-card pl-9 pr-3 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus:border-[#003AB8] focus:ring-2 focus:ring-[#003AB8]/20" />
+        </div>
+
+        <div class="flex items-center gap-3">
+          <span class="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+            Filtre:
+          </span>
+          <button class="flex min-w-[150px] items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm">
+            Všetci agenti
+            <i data-lucide="chevron-down" class="h-4 w-4 text-muted-foreground"></i>
+          </button>
+          <button class="flex min-w-[150px] items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm shadow-sm">
+            Všetci agenti
+            <i data-lucide="chevron-down" class="h-4 w-4 text-muted-foreground"></i>
+          </button>
+
+          <div class="flex overflow-hidden rounded-md border border-border shadow-sm">
+            <button class="bg-[#003AB8] px-2.5 py-2 text-white">
+              <i data-lucide="layout-grid" class="h-4 w-4"></i>
+            </button>
+            <button class="bg-card px-2.5 py-2 text-muted-foreground hover:bg-muted">
+              <i data-lucide="list" class="h-4 w-4"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Counter -->
+      <p class="mb-4 text-sm text-muted-foreground" id="counter"></p>
+
+      <!-- Agent grid -->
+      <div class="grid grid-cols-1 gap-5 lg:grid-cols-2" id="agentGrid"></div>
+    </main>
+  </div>
+
+  <script>
+    const navItems = [
+      { label: "Prehľad", icon: "layout-grid", href: "dashboard-preview.html" },
+      { label: "Pohovory", icon: "message-square" },
+      { label: "Pracovné pozície", icon: "briefcase" },
+      { label: "Kandidáti", icon: "clipboard-list" },
+      { label: "Vyhľadávanie talentov", icon: "search", href: "instaview-sourcing-agent.html" },
+      { label: "Agenti", icon: "bot", href: "agents-preview.html", active: true },
+      { label: "Design agent", icon: "sparkles", href: "design-agent.html" },
+    ];
+    const bottomNav = [
+      { label: "Fakturácia a spotreba", icon: "credit-card" },
+      { label: "Nastavenia", icon: "settings" },
+      { label: "Podpora", icon: "help-circle" },
+    ];
+
+    const agents = [
+      { name: "cxycxcxyc", channel: "Telefón", type: "Predvýber", language: "Angličtina", flag: "🇬🇧", questions: 0, minutes: 10 },
+      { name: "instaview agent", channel: "Telefón", type: "Predvýber", language: "Čeština", flag: "🇨🇿", questions: 0, minutes: 10 },
+      { name: "online", channel: "Online", type: "Predvýber", language: "Angličtina", flag: "🇬🇧", questions: 0, minutes: 10 },
+      { name: "agent", channel: "Telefón", type: "Predvýber", language: "Angličtina", flag: "🇬🇧", questions: 3, minutes: 10 },
+      { name: "instaview", channel: "Telefón", type: "Predvýber", language: "Čeština", flag: "🇨🇿", questions: 0, minutes: 10 },
+      { name: "Online", channel: "Online", type: "Predvýber", language: "Slovenčina", flag: "🇸🇰", questions: 3, minutes: 10 },
+      { name: "Test 2", channel: "Telefón", type: "Predvýber", language: "Slovenčina", flag: "🇸🇰", questions: 0, minutes: 30 },
+      { name: "Pracovník odberného miesta", channel: "Telefón", type: "Oslovenie", language: "Slovenčina", flag: "🇸🇰", questions: 6, minutes: 10 },
+      { name: "Elektrikár-údržbár", channel: "Telefón", type: "Predvýber", language: "Slovenčina", flag: "🇸🇰", questions: 6, minutes: 11 },
+    ];
+
+    document.getElementById("mainNav").innerHTML = navItems.map(i => {
+      const cls = `flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${i.active ? "bg-[#003AB8]/15 text-[#003AB8]" : "text-foreground hover:bg-muted"}`;
+      const inner = `<i data-lucide="${i.icon}" class="h-4 w-4"></i>${i.label}`;
+      return i.href
+        ? `<a href="${i.href}" class="${cls}">${inner}</a>`
+        : `<button class="${cls}">${inner}</button>`;
+    }).join("");
+
+    document.getElementById("bottomNav").innerHTML = bottomNav.map(i => `
+      <button class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+        <i data-lucide="${i.icon}" class="h-4 w-4"></i>${i.label}
+      </button>`).join("");
+
+    const statBox = (value, label) => `
+      <div class="flex flex-1 flex-col items-center justify-center rounded-lg border border-border bg-muted/40 py-3">
+        <span class="text-2xl font-bold text-[#003AB8]">${value}</span>
+        <span class="mt-0.5 text-xs text-muted-foreground">${label}</span>
+      </div>`;
+
+    const grid = document.getElementById("agentGrid");
+    grid.innerHTML = agents.map((a, i) => {
+      const channelIcon = a.channel === "Online" ? "video" : "phone";
+      const typeIcon = a.type === "Oslovenie" ? "send" : "search";
+      return `
+      <div class="agent-card rounded-xl border border-border bg-card shadow-sm" data-index="${i}">
+        <div class="flex flex-col gap-3 p-4">
+          <div class="flex items-start justify-between gap-2">
+            <h3 class="text-base font-bold leading-tight">${a.name}</h3>
+            <div class="flex shrink-0 items-center gap-1.5">
+              <span class="flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+                <i data-lucide="${channelIcon}" class="h-3 w-3"></i>${a.channel}
+              </span>
+              <button class="del-btn flex h-7 w-7 items-center justify-center rounded-full border border-red-400/40 text-red-500 hover:bg-red-500/10" title="Delete agent">
+                <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex justify-center">
+            <div class="flex items-center gap-2.5 rounded-full border border-border bg-background px-3 py-1 text-xs">
+              <span class="flex items-center gap-1.5 text-muted-foreground">
+                <i data-lucide="${typeIcon}" class="h-3.5 w-3.5"></i>${a.type}
+              </span>
+              <span class="text-border">|</span>
+              <span class="flex items-center gap-1.5">
+                <span class="text-sm leading-none">${a.flag}</span>${a.language}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex gap-2.5">
+            ${statBox(a.questions, "Otázky")}
+            ${statBox(a.minutes, "Minúty")}
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <button class="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-muted">Upraviť agenta</button>
+            <button class="rounded-md bg-[#003AB8] px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-[#002a85]">Použiť agenta</button>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+
+    const counter = document.getElementById("counter");
+    const total = agents.length;
+    const updateCounter = () =>
+      counter.textContent = `Zobrazené ${grid.querySelectorAll(".agent-card").length} z ${total} agentov`;
+    updateCounter();
+
+    // Delete agent cards
+    grid.addEventListener("click", (e) => {
+      const del = e.target.closest(".del-btn");
+      if (!del) return;
+      del.closest(".agent-card").remove();
+      updateCounter();
+    });
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
